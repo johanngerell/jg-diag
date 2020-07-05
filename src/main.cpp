@@ -36,96 +36,69 @@ public:
     
     std::string build()
     {
+        std::string xml;
+        
         {
-            tag svg{m_svg, "svg"};
-            attribute("width", m_width);
-            attribute("height", m_height);
-            attribute("version", "1.1");
-            attribute("baseProfile", "full");
-            attribute("xmlns", "http://www.w3.org/2000/svg");
-            svg.end();
+            tag svg{xml, "svg"};
+            svg.attribute("width", m_width);
+            svg.attribute("height", m_height);
+            svg.attribute("version", "1.1");
+            svg.attribute("baseProfile", "full");
+            svg.attribute("xmlns", "http://www.w3.org/2000/svg");
 
             if (m_background)
             {
-                self_closed_tag background{m_svg, "rect"};
-                attribute("width", "100%");
-                attribute("height", "100%");
-                attribute("fill", m_background_fill);
+                tag background{svg, "rect"};
+                background.attribute("width", "100%");
+                background.attribute("height", "100%");
+                background.attribute("fill", m_background_fill);
             }
 
             if (m_grid)
             {
                 for (size_t x = m_grid_x; x <= m_width; x += m_grid_x)
                 {
-                    self_closed_tag vertical{m_svg, "line"};
-                    attribute("x1", x);
-                    attribute("x2", x);
-                    attribute("y1", 0);
-                    attribute("y2", m_height);
-                    attribute("stroke", m_grid_stroke);
-                    attribute("stroke-width", 1);
+                    tag vertical{svg, "line"};
+                    vertical.attribute("x1", x);
+                    vertical.attribute("x2", x);
+                    vertical.attribute("y1", 0);
+                    vertical.attribute("y2", m_height);
+                    vertical.attribute("stroke", m_grid_stroke);
+                    vertical.attribute("stroke-width", 1);
                 }
 
                 for (size_t y = m_grid_y; y <= m_height; y += m_grid_y)
                 {
-                    self_closed_tag horizontal{m_svg, "line"};
-                    attribute("x1", 0);
-                    attribute("x2", m_width);
-                    attribute("y1", y);
-                    attribute("y2", y);
-                    attribute("stroke", m_grid_stroke);
-                    attribute("stroke-width", 1);
+                    tag horizontal{svg, "line"};
+                    horizontal.attribute("x1", 0);
+                    horizontal.attribute("x2", m_width);
+                    horizontal.attribute("y1", y);
+                    horizontal.attribute("y2", y);
+                    horizontal.attribute("stroke", m_grid_stroke);
+                    horizontal.attribute("stroke-width", 1);
                 }
             }
 
             if (m_border)
             {
-                self_closed_tag border{m_svg, "rect"};
-                attribute("x", 0);
-                attribute("y", 0);
-                attribute("width", m_width); 
-                attribute("height", m_height);
-                attribute("stroke", m_border_stroke);
-                attribute("fill", "transparent");
-                attribute("stroke-width", 1);
+                tag border{svg, "rect"};
+                border.attribute("x", 0);
+                border.attribute("y", 0);
+                border.attribute("width", m_width); 
+                border.attribute("height", m_height);
+                border.attribute("stroke", m_border_stroke);
+                border.attribute("fill", "transparent");
+                border.attribute("stroke-width", 1);
             }
         }
-        
-        return m_svg;
+
+        return xml;
     }
 
 private:
-    void attribute(const char* name, size_t value)
+    class tag final
     {
-        m_svg.append(1, ' ').append(name).append("=\"").append(std::to_string(value)).append("\"");
-    }
-
-    void attribute(const char* name, std::string_view value)
-    {
-        m_svg.append(1, ' ').append(name).append("=\"").append(value).append("\"");
-    }
-
-    struct self_closed_tag final
-    {
-        std::string& m_xml;
-
-        self_closed_tag(std::string& xml, std::string_view name)
-            : m_xml{xml}
-        {
-            m_xml.append("<").append(name);
-        }
-
-        ~self_closed_tag()
-        {
-            m_xml.append(" />\n");
-        }
-    };
-
-    struct tag final
-    {
-        std::string& m_xml;
-        std::string_view m_name;
-
+    public:
         tag(std::string& xml, std::string_view name)
             : m_xml{xml}
             , m_name{name}
@@ -133,18 +106,47 @@ private:
             m_xml.append("<").append(m_name);
         }
 
+        tag(tag& parent, std::string_view name)
+            : m_xml{parent.m_xml}
+            , m_name{name}
+        {
+            if (!parent.m_is_parent)
+            {
+                parent.m_is_parent = true;
+                m_xml.append(">\n");
+            }
+
+            m_xml.append("<").append(name);
+        }
+
         ~tag()
         {
-            m_xml.append("</").append(m_name).append(">\n");
+            if (m_is_parent)
+            {
+                m_xml.append("</").append(m_name).append(">\n");
+            }
+            else
+            {
+                m_xml.append(" />\n");
+            }
         }
 
-        void end()
+        void attribute(std::string_view name, size_t value)
         {
-            m_xml.append(">\n");
+            m_xml.append(1, ' ').append(name).append("=\"").append(std::to_string(value)).append("\"");
         }
+
+        void attribute(std::string_view name, std::string_view value)
+        {
+            m_xml.append(1, ' ').append(name).append("=\"").append(value).append("\"");
+        }
+    
+    private:
+        std::string& m_xml;
+        std::string_view m_name;
+        bool m_is_parent{};
     };
 
-    std::string m_svg;
     size_t m_width{};
     size_t m_height{};
     bool m_background{};
