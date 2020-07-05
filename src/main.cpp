@@ -12,6 +12,13 @@ public:
         , m_fill{std::move(fill)}
     {}
 
+    svg_builder& with_border(std::string stroke)
+    {
+        m_border = true;
+        m_border_stroke = stroke;
+        return *this;
+    }
+
     svg_builder& with_grid(size_t x, size_t y, std::string stroke)
     {
         m_grid = true;
@@ -75,6 +82,19 @@ public:
             }
         }
 
+        if (m_border)
+        {
+            svg += "<rect " +
+                   attribute_i("x", 0) + " " + 
+                   attribute_i("y", 0) + " " +
+                   attribute_i("width", m_width) + " " + 
+                   attribute_i("height", m_height) + " " +
+                   attribute_s("stroke", m_border_stroke) + " " +
+                   attribute_s("fill", "transparent") + " " +
+                   attribute_i("stroke-width", 1) +
+                   " />\n";
+        }
+
         svg += "</svg>\n";
 
         return svg;
@@ -83,16 +103,19 @@ public:
 private:
     size_t m_width{};
     size_t m_height{};
-    std::string m_fill{"white"};
+    std::string m_fill;
+    bool m_border{};
+    std::string m_border_stroke;
     bool m_grid{};
     size_t m_grid_x{};
     size_t m_grid_y{};
-    std::string m_grid_stroke{"lightgrey"};
+    std::string m_grid_stroke;
 };
 
 int main()
 {
-    svg_builder svg{400, 250, "white"};
+    svg_builder svg{1024, 768, "white"};
+    svg.with_border("black");
     svg.with_grid(50, 50, "#eeeeee");
 
     std::cout << svg.build() << std::endl;
