@@ -28,15 +28,6 @@ public:
         *m_stream << "<" << m_name;
     }
 
-    xml_tag(xml_tag&& other)
-        : m_stream{other.m_stream}
-        , m_name{std::move(other.m_name)}
-        , m_is_parent{other.m_is_parent}
-    {
-        other.m_stream = nullptr;
-        other.m_is_parent = false;
-    }
-
     ~xml_tag()
     {
         if (m_stream)
