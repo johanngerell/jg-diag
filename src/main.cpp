@@ -1,51 +1,65 @@
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <string_view>
 
 class xml_tag final
 {
 public:
-    static xml_tag root(std::string& xml, std::string name)
+    xml_tag(std::ostream& stream, std::string name)
+        : m_stream{&stream}
+        , m_name{std::move(name)}
     {
-        return {xml, name};
+        *m_stream << "<" << m_name;
     }
 
-    static xml_tag child(xml_tag& parent, std::string name)
+    xml_tag(xml_tag& parent, std::string name)
+        : m_stream{parent.m_stream}
+        , m_name{std::move(name)}
     {
-        return {parent, name};
+        if (!parent.m_is_parent)
+        {
+            parent.m_is_parent = true;
+
+            if (!parent.m_is_inline)
+                *m_stream << ">\n";
+        }
+
+        *m_stream << "<" << m_name;
     }
 
     xml_tag(xml_tag&& other)
-        : m_xml{other.m_xml}
+        : m_stream{other.m_stream}
         , m_name{std::move(other.m_name)}
         , m_is_parent{other.m_is_parent}
     {
-        other.m_xml = nullptr;
+        other.m_stream = nullptr;
         other.m_is_parent = false;
     }
 
     ~xml_tag()
     {
-        if (m_xml)
+        if (m_stream)
         {
             if (m_is_parent)
-                m_xml->append("</").append(m_name).append(">");
+                *m_stream << "</" << m_name << ">";
             else
-                m_xml->append(" />");
+                *m_stream << " />";
             
             if (!m_is_inline)
-                m_xml->append("\n");
+                *m_stream << "\n";
         }
     }
 
     xml_tag& attribute(std::string_view name, size_t value)
     {
-        m_xml->append(1, ' ').append(name).append("=\"").append(std::to_string(value)).append("\"");
+        *m_stream << ' ' << name << "=\"" << value << "\"";
         return *this;
     }
 
     xml_tag& attribute(std::string_view name, std::string_view value)
     {
-        m_xml->append(1, ' ').append(name).append("=\"").append(value).append("\"");
+        *m_stream << ' ' << name << "=\"" << value << "\"";
         return *this;
     }
 
@@ -54,10 +68,10 @@ public:
         if (!m_is_parent)
         {
             m_is_parent = true;
-            m_xml->append(">");
+            *m_stream << ">";
         }
 
-        m_xml->append(text);
+        *m_stream << text;
         return *this;
     }
 
@@ -67,29 +81,7 @@ public:
     }
 
 private:
-    xml_tag(std::string& xml, std::string name)
-        : m_xml{&xml}
-        , m_name{std::move(name)}
-    {
-        m_xml->append("<").append(m_name);
-    }
-
-    xml_tag(xml_tag& parent, std::string name)
-        : m_xml{parent.m_xml}
-        , m_name{std::move(name)}
-    {
-        if (!parent.m_is_parent)
-        {
-            parent.m_is_parent = true;
-
-            if (!parent.m_is_inline)
-                m_xml->append(">\n");
-        }
-
-        m_xml->append("<").append(m_name);
-    }
-
-    std::string* m_xml;
+    std::ostream* m_stream{};
     std::string m_name;
     bool m_is_parent{};
     bool m_is_inline{};
@@ -130,10 +122,10 @@ public:
     
     std::string build()
     {
-        std::string xml;
+        std::stringstream stream;
         
         {
-            auto svg = xml_tag::root(xml, "svg");
+            xml_tag svg{stream, "svg"};
             svg.attribute("width", m_width);
             svg.attribute("height", m_height);
             svg.attribute("version", "1.1");
@@ -141,7 +133,7 @@ public:
             svg.attribute("xmlns", "http://www.w3.org/2000/svg");
 
             if (m_background)
-                xml_tag::child(svg, "rect")
+                xml_tag{svg, "rect"}
                     .attribute("width", "100%")
                     .attribute("height", "100%")
                     .attribute("fill", m_background_fill);
@@ -149,7 +141,7 @@ public:
             if (m_grid)
             {
                 for (size_t x = m_grid_x; x <= m_width; x += m_grid_x)
-                    xml_tag::child(svg, "line")
+                    xml_tag{svg, "line"}
                         .attribute("x1", x)
                         .attribute("x2", x)
                         .attribute("y1", 0)
@@ -158,7 +150,7 @@ public:
                         .attribute("stroke-width", 1);
 
                 for (size_t y = m_grid_y; y <= m_height; y += m_grid_y)
-                    xml_tag::child(svg, "line")
+                    xml_tag{svg, "line"}
                         .attribute("x1", 0)
                         .attribute("x2", m_width)
                         .attribute("y1", y)
@@ -167,7 +159,7 @@ public:
                         .attribute("stroke-width", 1);
             }
 
-            xml_tag::child(svg, "rect")
+            xml_tag{svg, "rect"}
                 .attribute("x", 50)
                 .attribute("y", 50)
                 .attribute("width", 300)
@@ -176,14 +168,15 @@ public:
                 .attribute("fill", "transparent")
                 .attribute("stroke-width", 3);
 
-            std::string s{"This is "};
-            xml_tag::root(s, "tspan")
+            std::stringstream s;
+            s << "This is ";
+            xml_tag{s, "tspan"}
                 .attribute("font-weight", "bold")
                 .attribute("fill", "red")
                 .text("bold and red")
                 .no_newline();
 
-            xml_tag::child(svg, "text")
+            xml_tag{svg, "text"}
                 .attribute("x", 75)
                 .attribute("y", 75)
                 .attribute("font-size", 25)
@@ -193,10 +186,10 @@ public:
                 .attribute("dominant-baseline", "middle")
                 .attribute("stroke", "black")
                 .attribute("fill", "white")
-                .text(s);
+                .text(s.str());
 
             if (m_border)
-                xml_tag::child(svg, "rect")
+                xml_tag{svg, "rect"}
                     .attribute("x", 0)
                     .attribute("y", 0)
                     .attribute("width", m_width)
@@ -206,7 +199,7 @@ public:
                     .attribute("stroke-width", 1);
         }
 
-        return xml;
+        return stream.str();
     }
 
 private:
