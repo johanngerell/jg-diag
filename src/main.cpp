@@ -87,143 +87,184 @@ private:
     bool m_is_inline{};
 };
 
-class svg_builder final
+struct svg_point final
+{
+    size_t x{};
+    size_t y{};
+};
+
+struct svg_size final
+{
+    size_t width{};
+    size_t height{};
+};
+
+struct svg_rect final
+{
+    size_t x{};
+    size_t y{};
+    size_t width{};
+    size_t height{};
+};
+
+enum class svg_dominant_baseline
+{
+    baseline,
+    middle,
+    hanging
+};
+
+std::string_view to_string(svg_dominant_baseline value)
+{
+    switch (value)
+    {
+        case svg_dominant_baseline::baseline: return "baseline";
+        case svg_dominant_baseline::middle:   return "middle";
+        case svg_dominant_baseline::hanging:  return "hanging";
+        default:                              return "middle";
+    }
+};
+
+enum class svg_text_anchor
+{
+    start,
+    middle,
+    end
+};
+
+std::string_view to_string(svg_text_anchor value)
+{
+    switch (value)
+    {
+        case svg_text_anchor::start:  return "start";
+        case svg_text_anchor::middle: return "middle";
+        case svg_text_anchor::end:    return "end";
+        default:                      return "start";
+    }
+};
+
+struct svg_rect_attributes final
+{
+    std::string fill{"black"};
+    std::string stroke{"none"};
+    std::string stroke_width{"1"};
+};
+
+struct svg_text_attributes final
+{
+    std::string font_size{"medium"};
+    std::string font_family{"sans-serif"};
+    std::string font_weight{"normal"};
+    std::string fill{"black"};
+    std::string stroke{"none"};
+    svg_text_anchor text_anchor{svg_text_anchor::start};
+    svg_dominant_baseline dominant_baseline{svg_dominant_baseline::middle};
+};
+
+class svg_writer final
 {
 public:
-    svg_builder() = default;
-
-    svg_builder(size_t width, size_t height)
-        : m_width{width}
-        , m_height{height}
-    {}
-
-    svg_builder& with_background(std::string fill)
+    svg_writer(std::ostream& stream, svg_size size)
+        : m_stream{stream}
+        , m_size{size}
+        , m_svg{m_stream, "svg"}
     {
-        m_background = true;
-        m_background_fill = std::move(fill);
-        return *this;
+        m_svg.attribute("width", m_size.width);
+        m_svg.attribute("height", m_size.height);
+        m_svg.attribute("version", "1.1");
+        m_svg.attribute("baseProfile", "full");
+        m_svg.attribute("xmlns", "http://www.w3.org/2000/svg");
     }
 
-    svg_builder& with_border(std::string stroke)
+    void write_background(std::string_view color = "white")
     {
-        m_border = true;
-        m_border_stroke = std::move(stroke);
-        return *this;
+        xml_tag{m_svg, "rect"}
+            .attribute("width", "100%")
+            .attribute("height", "100%")
+            .attribute("fill", color);
     }
 
-    svg_builder& with_grid(size_t x, size_t y, std::string stroke)
+    void write_grid(size_t distance, std::string_view color = "whitesmoke")
     {
-        m_grid = true;
-        m_grid_x = x;
-        m_grid_y = y;
-        m_grid_stroke = std::move(stroke);
-        return *this;
+        for (size_t i = distance; i <= m_size.width; i += distance)
+            xml_tag{m_svg, "line"}
+                .attribute("x1", i)
+                .attribute("x2", i)
+                .attribute("y1", 0)
+                .attribute("y2", m_size.height)
+                .attribute("stroke", color)
+                .attribute("stroke-width", 1);
+
+        for (size_t i = distance; i <= m_size.height; i += distance)
+            xml_tag{m_svg, "line"}
+                .attribute("x1", 0)
+                .attribute("x2", m_size.width)
+                .attribute("y1", i)
+                .attribute("y2", i)
+                .attribute("stroke", color)
+                .attribute("stroke-width", 1);
     }
-    
-    std::string build()
+
+    void write_border(std::string_view color = "black")
     {
-        std::stringstream stream;
-        
-        {
-            xml_tag svg{stream, "svg"};
-            svg.attribute("width", m_width);
-            svg.attribute("height", m_height);
-            svg.attribute("version", "1.1");
-            svg.attribute("baseProfile", "full");
-            svg.attribute("xmlns", "http://www.w3.org/2000/svg");
+        xml_tag{m_svg, "rect"}
+            .attribute("x", 0)
+            .attribute("y", 0)
+            .attribute("width", m_size.width)
+            .attribute("height", m_size.height)
+            .attribute("stroke", color)
+            .attribute("fill", "transparent")
+            .attribute("stroke-width", 1);
+    }
 
-            if (m_background)
-                xml_tag{svg, "rect"}
-                    .attribute("width", "100%")
-                    .attribute("height", "100%")
-                    .attribute("fill", m_background_fill);
+    void write_rect(svg_rect rect, const svg_rect_attributes& attributes)
+    {
+        xml_tag{m_svg, "rect"}
+            .attribute("x", rect.x)
+            .attribute("y", rect.y)
+            .attribute("width", rect.width)
+            .attribute("height", rect.height)
+            .attribute("stroke", attributes.stroke)
+            .attribute("fill", attributes.fill)
+            .attribute("stroke-width", attributes.stroke_width);
+    }
 
-            if (m_grid)
-            {
-                for (size_t x = m_grid_x; x <= m_width; x += m_grid_x)
-                    xml_tag{svg, "line"}
-                        .attribute("x1", x)
-                        .attribute("x2", x)
-                        .attribute("y1", 0)
-                        .attribute("y2", m_height)
-                        .attribute("stroke", m_grid_stroke)
-                        .attribute("stroke-width", 1);
-
-                for (size_t y = m_grid_y; y <= m_height; y += m_grid_y)
-                    xml_tag{svg, "line"}
-                        .attribute("x1", 0)
-                        .attribute("x2", m_width)
-                        .attribute("y1", y)
-                        .attribute("y2", y)
-                        .attribute("stroke", m_grid_stroke)
-                        .attribute("stroke-width", 1);
-            }
-
-            xml_tag{svg, "rect"}
-                .attribute("x", 50)
-                .attribute("y", 50)
-                .attribute("width", 300)
-                .attribute("height", 50)
-                .attribute("stroke", "black")
-                .attribute("fill", "transparent")
-                .attribute("stroke-width", 3);
-
-            std::stringstream s;
-            s << "This is ";
-            xml_tag{s, "tspan"}
-                .attribute("font-weight", "bold")
-                .attribute("fill", "red")
-                .text("bold and red")
-                .no_newline();
-
-            xml_tag{svg, "text"}
-                .attribute("x", 75)
-                .attribute("y", 75)
-                .attribute("font-size", 25)
-                .attribute("font-family", "sans-serif")
-                .attribute("font-weight", "bold")
-                .attribute("text-anchor", "left")
-                .attribute("dominant-baseline", "middle")
-                .attribute("stroke", "black")
-                .attribute("fill", "white")
-                .text(s.str());
-
-            if (m_border)
-                xml_tag{svg, "rect"}
-                    .attribute("x", 0)
-                    .attribute("y", 0)
-                    .attribute("width", m_width)
-                    .attribute("height", m_height)
-                    .attribute("stroke", m_border_stroke)
-                    .attribute("fill", "transparent")
-                    .attribute("stroke-width", 1);
-        }
-
-        return stream.str();
+    void write_text(svg_point point, const svg_text_attributes& attributes, std::string_view text)
+    {
+        xml_tag{m_svg, "text"}
+            .attribute("x", point.x)
+            .attribute("y", point.y)
+            .attribute("font-size", attributes.font_size)
+            .attribute("font-family", attributes.font_family)
+            .attribute("font-weight", attributes.font_weight)
+            .attribute("text-anchor", to_string(attributes.text_anchor))
+            .attribute("dominant-baseline", to_string(attributes.dominant_baseline))
+            .attribute("fill", attributes.fill)
+            .attribute("stroke", attributes.stroke)
+            .text(text);
     }
 
 private:
-    size_t m_width{};
-    size_t m_height{};
-
-    bool m_background{};
-    std::string m_background_fill;
-    
-    bool m_border{};
-    std::string m_border_stroke;
-    
-    bool m_grid{};
-    size_t m_grid_x{};
-    size_t m_grid_y{};
-    std::string m_grid_stroke;
+    std::ostream& m_stream;
+    svg_size m_size;
+    xml_tag m_svg;
 };
 
 int main()
 {
-    svg_builder svg{1024, 768};
-    svg.with_background("white");
-    svg.with_border("black");
-    svg.with_grid(50, 50, "#eeeeee");
+    svg_rect_attributes default_rect;
+    default_rect.fill = "whitesmoke";
+    default_rect.stroke = "black";
+    default_rect.stroke_width = "3";
 
-    std::cout << svg.build() << std::endl;
+    svg_text_attributes default_text;
+    default_text.font_size = "25";
+    default_text.font_weight = "bold";
+
+    svg_writer svg{std::cout, {1024, 768}};
+    svg.write_background();
+    svg.write_grid(50);
+    svg.write_rect({50, 50, 300, 50}, default_rect);
+    svg.write_text({75, 75}, default_text, "SomeName");
+    svg.write_border();
 }
