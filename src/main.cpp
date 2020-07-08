@@ -160,11 +160,12 @@ public:
         , m_size{size}
         , m_svg{m_stream, "svg"}
     {
-        m_svg.attribute("width", m_size.width);
-        m_svg.attribute("height", m_size.height);
-        m_svg.attribute("version", "1.1");
-        m_svg.attribute("baseProfile", "full");
-        m_svg.attribute("xmlns", "http://www.w3.org/2000/svg");
+        m_svg
+            .attribute("width", m_size.width)
+            .attribute("height", m_size.height)
+            .attribute("version", "1.1")
+            .attribute("baseProfile", "full")
+            .attribute("xmlns", "http://www.w3.org/2000/svg");
     }
 
     void write_background(std::string_view color = "white")
