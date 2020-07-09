@@ -1,5 +1,8 @@
 #include "jg_xml_writer.h"
 
+namespace jg
+{
+
 struct svg_point final
 {
     size_t x{};
@@ -166,3 +169,5 @@ private:
     svg_size m_size;
     xml_writer m_root;
 };
+
+} // namespace jg

@@ -2,6 +2,9 @@
 #include <string>
 #include <string_view>
 
+namespace jg
+{
+
 class xml_writer final
 {
 public:
@@ -92,3 +95,5 @@ private:
     std::string m_name;
     bool m_is_parent{};
 };
+
+} // namespace jg
