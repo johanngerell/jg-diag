@@ -1,3 +1,4 @@
+#include <jg_verify.h>
 #include "jg_xml_writer.h"
 
 namespace jg
@@ -37,7 +38,7 @@ std::string_view to_string(svg_dominant_baseline value)
         case svg_dominant_baseline::baseline: return "baseline";
         case svg_dominant_baseline::middle:   return "middle";
         case svg_dominant_baseline::hanging:  return "hanging";
-        default:                              return "middle";
+        default: verify(false);               return "unknown";
     }
 };
 
@@ -55,7 +56,7 @@ std::string_view to_string(svg_text_anchor value)
         case svg_text_anchor::start:  return "start";
         case svg_text_anchor::middle: return "middle";
         case svg_text_anchor::end:    return "end";
-        default:                      return "start";
+        default: verify(false);       return "unknown";
     }
 };
 
