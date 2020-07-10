@@ -60,6 +60,12 @@ std::string_view to_string(svg_text_anchor value)
     }
 };
 
+struct svg_line_attributes final
+{
+    std::string stroke{"black"};
+    std::string stroke_width{"1"};
+};
+
 struct svg_rect_attributes final
 {
     std::string fill{"black"};
@@ -91,6 +97,27 @@ public:
         m_root.write_attribute("version", "1.1");
         m_root.write_attribute("baseProfile", "full");
         m_root.write_attribute("xmlns", "http://www.w3.org/2000/svg");
+
+        auto defs = xml_writer::child_element(m_root, "defs");
+        
+        auto marker = xml_writer::child_element(defs, "marker");
+        marker.write_attribute("id", "arrowhead");
+        marker.write_attribute("markerWidth", m_arrowhead_length);
+        marker.write_attribute("markerHeight", m_arrowhead_length);
+        marker.write_attribute("refX", "0");
+        marker.write_attribute("refY", m_arrowhead_length / 2);
+        marker.write_attribute("orient", "auto");
+        marker.write_attribute("markerUnits", "userSpaceOnUse");
+
+        std::string points{"0 0, "};
+        points += std::to_string(m_arrowhead_length);
+        points += " ";
+        points += std::to_string(m_arrowhead_length / 2);
+        points += ", 0 ";
+        points += std::to_string(m_arrowhead_length);
+        
+        auto polygon = xml_writer::child_element(marker, "polygon");
+        polygon.write_attribute("points", points);
     }
 
     void write_background(std::string_view color = "white")
@@ -103,27 +130,15 @@ public:
 
     void write_grid(size_t distance, std::string_view color = "whitesmoke")
     {
+        svg_line_attributes attributes;
+        attributes.stroke = color;
+        attributes.stroke_width = "1";
+
         for (size_t i = distance; i <= m_size.width; i += distance)
-        {
-            auto tag = xml_writer::child_element(m_root, "line");
-            tag.write_attribute("x1", i);
-            tag.write_attribute("x2", i);
-            tag.write_attribute("y1", 0);
-            tag.write_attribute("y2", m_size.height);
-            tag.write_attribute("stroke", color);
-            tag.write_attribute("stroke-width", 1);
-        }
+            write_line({i, 0}, {i, m_size.height}, attributes);
 
         for (size_t i = distance; i <= m_size.height; i += distance)
-        {
-            auto tag = xml_writer::child_element(m_root, "line");
-            tag.write_attribute("x1", 0);
-            tag.write_attribute("x2", m_size.width);
-            tag.write_attribute("y1", i);
-            tag.write_attribute("y2", i);
-            tag.write_attribute("stroke", color);
-            tag.write_attribute("stroke-width", 1);
-        }
+            write_line({0, i}, {m_size.width, i}, attributes);
     }
 
     void write_border(std::string_view color = "black")
@@ -136,6 +151,34 @@ public:
         tag.write_attribute("stroke", color);
         tag.write_attribute("fill", "transparent");
         tag.write_attribute("stroke-width", 1);
+    }
+
+    void write_line(svg_point p1, svg_point p2, const svg_line_attributes& attributes)
+    {
+        auto tag = xml_writer::child_element(m_root, "line");
+        tag.write_attribute("x1", p1.x);
+        tag.write_attribute("y1", p1.y);
+        tag.write_attribute("x2", p2.x);
+        tag.write_attribute("y2", p2.y);
+        tag.write_attribute("stroke", attributes.stroke);
+        tag.write_attribute("stroke-width", attributes.stroke_width);
+    }
+
+    void write_arrow(svg_point p1, svg_point p2, const svg_line_attributes& attributes)
+    {
+        auto tag = xml_writer::child_element(m_root, "line");
+        tag.write_attribute("x1", p1.x);
+        tag.write_attribute("y1", p1.y);
+
+        const size_t x_correction = p2.x == p1.x ? 0 : (m_arrowhead_length * (p2.x > p1.x ? -1 : 1));
+        tag.write_attribute("x2", p2.x + x_correction);
+
+        const auto y_correction = p2.y == p1.y ? 0 : (m_arrowhead_length * (p2.y > p1.y ? -1 : 1));
+        tag.write_attribute("y2", p2.y + y_correction);
+
+        tag.write_attribute("stroke", attributes.stroke);
+        tag.write_attribute("stroke-width", attributes.stroke_width);
+        tag.write_attribute("marker-end", "url(#arrowhead)");
     }
 
     void write_rect(svg_rect rect, const svg_rect_attributes& attributes)
@@ -169,6 +212,7 @@ private:
     std::ostream& m_stream;
     svg_size m_size;
     xml_writer m_root;
+    size_t m_arrowhead_length{20};
 };
 
 } // namespace jg
