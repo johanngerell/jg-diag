@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -49,12 +51,8 @@ public:
         }
     }
 
-    void write_attribute(std::string_view name, size_t value)
-    {
-        *m_stream << ' ' << name << "=\"" << value << "\"";
-    }
-
-    void write_attribute(std::string_view name, std::string_view value)
+    template <typename T>
+    void write_attribute(std::string_view name, const T& value)
     {
         *m_stream << ' ' << name << "=\"" << value << "\"";
     }

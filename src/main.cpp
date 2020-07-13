@@ -3,42 +3,48 @@
 #include <vector>
 #include <unordered_map>
 
-struct point final
-{
-    size_t x{};
-    size_t y{};
-};
-
-struct rect final
-{
-    size_t x{};
-    size_t y{};
-    size_t width{};
-    size_t height{};
-};
-
 class box final
 {
 public:
-    box(rect r, std::string text, size_t id)
-        : m_rect{std::move(r)}
+    box(jg::rect bounds, std::string text, size_t id)
+        : m_bounds{std::move(bounds)}
         , m_text{std::move(text)}
         , m_id{id}
     {
-        m_anchor_points.push_back({r.x,           r.y + r.height / 2});
-        m_anchor_points.push_back({r.x + r.width, r.y + r.height / 2});
-
-        m_anchor_points.push_back({r.x + r.width / 2, r.y});
-        m_anchor_points.push_back({r.x + r.width / 2, r.y + r.height});
+        m_anchors.push_back({m_bounds.x                     , m_bounds.y + m_bounds.height / 2});
+        m_anchors.push_back({m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2});
+        m_anchors.push_back({m_bounds.x + m_bounds.width / 2, m_bounds.y});
+        m_anchors.push_back({m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height});
     }
 
-//private:
+    box(box&&) = default;
+    box& operator=(box&&) = default;
+
+    jg::rect bounds() const
+    {
+        return m_bounds;
+    }
+
+    std::string_view text() const
+    {
+        return m_text;
+    }
+
+    size_t id() const
+    {
+        return m_id;
+    }
+
+    const std::vector<jg::point>& anchors() const
+    {
+        return m_anchors;
+    }
+
+private:
     size_t m_id;
-    rect m_rect;
+    jg::rect m_bounds;
     std::string m_text;
-    size_t m_text_size{25};
-    size_t m_text_offset{25};
-    std::vector<point> m_anchor_points;
+    std::vector<jg::point> m_anchors;
 };
 
 class relationship final
@@ -49,21 +55,25 @@ public:
     size_t kind{};
 };
 
-class diag_writer final
+class diagram final
 {
-    jg::svg_writer m_svg{std::cout, {1024, 768}};
+    jg::size m_size;
     std::vector<std::variant<box>> m_shapes;
     std::unordered_map<size_t, size_t> m_shape_ids; // id, index
     std::vector<relationship> m_relationships;
 
-    friend std::ostream& operator<<(std::ostream&, diag_writer&);
+    friend std::ostream& operator<<(std::ostream&, diagram&);
 
 public:
+    diagram(jg::size size)
+        : m_size{std::move(size)}
+    {}
+
     template <typename T>
     void add_shape(T&& shape)
     {
         m_shapes.push_back(std::move(shape));
-        m_shape_ids[std::get<box>(m_shapes.back()).m_id] = m_shapes.size() - 1;
+        m_shape_ids[std::get<box>(m_shapes.back()).id()] = m_shapes.size() - 1;
     }
 
     void add_relation(size_t source_id, size_t target_id)
@@ -72,9 +82,9 @@ public:
     }
 };
 
-std::ostream& operator<<(std::ostream& stream, diag_writer& diag)
+std::ostream& operator<<(std::ostream& stream, diagram& diag)
 {
-    jg::svg_writer svg{stream, {1024, 768}};
+    jg::svg_writer svg{stream, diag.m_size};
     svg.write_background();
     svg.write_grid(50);
 
@@ -83,6 +93,7 @@ std::ostream& operator<<(std::ostream& stream, diag_writer& diag)
     default_rect.stroke = "black";
     default_rect.stroke_width = "3";
 
+    constexpr float text_offset = 12.5; // 25 / 2
     jg::svg_text_attributes default_text;
     default_text.font_size = "25";
     default_text.font_weight = "bold";
@@ -92,11 +103,12 @@ std::ostream& operator<<(std::ostream& stream, diag_writer& diag)
 
     for (const auto& shape : diag.m_shapes)
     {
-        std::visit([&](const box& b) {
-            svg.write_rect({b.m_rect.x, b.m_rect.y, b.m_rect.width, b.m_rect.height}, default_rect);
-            svg.write_text({b.m_rect.x + 25, b.m_rect.y + b.m_rect.height / 2}, default_text, b.m_text);
+        std::visit([&](const auto& b) {
+            const auto bounds = b.bounds();
+            svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+            svg.write_text({bounds.x + text_offset, bounds.y + bounds.height / 2}, default_text, b.text());
 
-            for (const auto& anchor : b.m_anchor_points)
+            for (const auto& anchor : b.anchors())
                 svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
         },
         shape);
@@ -110,15 +122,15 @@ std::ostream& operator<<(std::ostream& stream, diag_writer& diag)
         const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids[relation.source]]);
         const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids[relation.target]]);
 
-        std::pair<point, point> anchors;
+        std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
 
-        for (const auto& source_anchor : source.m_anchor_points)
+        for (const auto& source_anchor : source.anchors())
         {
-            for (const auto& target_anchor : target.m_anchor_points)
+            for (const auto& target_anchor : target.anchors())
             {
-                const float dx = (float)target_anchor.x - (float)source_anchor.x;
-                const float dy = (float)target_anchor.y - (float)source_anchor.y;
+                const float dx = target_anchor.x - source_anchor.x;
+                const float dy = target_anchor.y - source_anchor.y;
                 const float distance = std::hypotf(dx, dy);
 
                 if (distance < shortest_distance)
@@ -198,8 +210,8 @@ int main()
     std::cout << json;
     */
 
-    diag_writer diag;
-    
+    diagram diag{{1024, 768}};
+
     diag.add_shape(box{{50, 50, 300, 50}, "Box 1", 1});
     diag.add_shape(box{{500, 50, 300, 50}, "Box 2", 2});
     diag.add_shape(box{{550, 300, 300, 50}, "Box 3", 3});

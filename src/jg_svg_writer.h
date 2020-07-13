@@ -1,28 +1,11 @@
+#pragma once
+
 #include <jg_verify.h>
 #include "jg_xml_writer.h"
+#include "jg_coordinates.h"
 
 namespace jg
 {
-
-struct svg_point final
-{
-    size_t x{};
-    size_t y{};
-};
-
-struct svg_size final
-{
-    size_t width{};
-    size_t height{};
-};
-
-struct svg_rect final
-{
-    size_t x{};
-    size_t y{};
-    size_t width{};
-    size_t height{};
-};
 
 enum class svg_dominant_baseline
 {
@@ -95,7 +78,7 @@ struct svg_circle_attributes final
 class svg_writer final
 {
 public:
-    svg_writer(std::ostream& stream, svg_size size)
+    svg_writer(std::ostream& stream, jg::size size)
         : m_stream{stream}
         , m_size{size}
         , m_root{xml_writer::root_element(m_stream, "svg")}
@@ -136,17 +119,17 @@ public:
         tag.write_attribute("fill", color);
     }
 
-    void write_grid(size_t distance, std::string_view color = "whitesmoke")
+    void write_grid(float distance, std::string_view color = "whitesmoke")
     {
         svg_line_attributes attributes;
         attributes.stroke = color;
         attributes.stroke_width = "1";
 
-        for (size_t i = distance; i <= m_size.width; i += distance)
-            write_line({i, 0}, {i, m_size.height}, attributes);
+        for (float f = distance; f <= m_size.width; f += distance)
+            write_line({f, 0}, {f, m_size.height}, attributes);
 
-        for (size_t i = distance; i <= m_size.height; i += distance)
-            write_line({0, i}, {m_size.width, i}, attributes);
+        for (float f = distance; f <= m_size.height; f += distance)
+            write_line({0, f}, {m_size.width, f}, attributes);
     }
 
     void write_border(std::string_view color = "black")
@@ -161,7 +144,7 @@ public:
         tag.write_attribute("stroke-width", 1);
     }
 
-    void write_line(svg_point p1, svg_point p2, const svg_line_attributes& attributes)
+    void write_line(jg::point p1, jg::point p2, const svg_line_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "line");
         tag.write_attribute("x1", p1.x);
@@ -172,7 +155,7 @@ public:
         tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
-    void write_arrow(svg_point p1, svg_point p2, const svg_line_attributes& attributes)
+    void write_arrow(jg::point p1, jg::point p2, const svg_line_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "line");
         tag.write_attribute("x1", p1.x);
@@ -192,7 +175,7 @@ public:
         tag.write_attribute("marker-end", "url(#arrowhead)");
     }
 
-    void write_rect(svg_rect rect, const svg_rect_attributes& attributes)
+    void write_rect(jg::rect rect, const svg_rect_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "rect");
         tag.write_attribute("x", rect.x);
@@ -204,7 +187,7 @@ public:
         tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
-    void write_text(svg_point point, const svg_text_attributes& attributes, std::string_view text)
+    void write_text(jg::point point, const svg_text_attributes& attributes, std::string_view text)
     {
         auto tag = xml_writer::child_element(m_root, "text");
         tag.write_attribute("x", point.x);
@@ -219,7 +202,7 @@ public:
         tag.write_text(text);
     }
 
-    void write_circle(svg_point point, size_t radius, const svg_circle_attributes& attributes)
+    void write_circle(jg::point point, size_t radius, const svg_circle_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "circle");
         tag.write_attribute("cx", point.x);
@@ -232,7 +215,7 @@ public:
 
 private:
     std::ostream& m_stream;
-    svg_size m_size;
+    jg::size m_size;
     xml_writer m_root;
     size_t m_arrowhead_length{20};
 };
