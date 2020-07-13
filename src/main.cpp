@@ -47,12 +47,17 @@ private:
     std::vector<jg::point> m_anchors;
 };
 
+enum class relationship_kind
+{
+    filled_arrow
+};
+
 class relationship final
 {
 public:
     size_t source{};
     size_t target{};
-    size_t kind{};
+    relationship_kind kind{};
 };
 
 class diagram final
@@ -62,7 +67,7 @@ class diagram final
     std::unordered_map<size_t, size_t> m_shape_ids; // id, index
     std::vector<relationship> m_relationships;
 
-    friend std::ostream& operator<<(std::ostream&, diagram&);
+    friend std::ostream& operator<<(std::ostream&, const diagram&);
 
 public:
     diagram(jg::size size)
@@ -76,13 +81,13 @@ public:
         m_shape_ids[std::get<box>(m_shapes.back()).id()] = m_shapes.size() - 1;
     }
 
-    void add_relation(size_t source_id, size_t target_id)
+    void add_relation(size_t source_id, size_t target_id, relationship_kind kind)
     {
-        m_relationships.push_back({source_id, target_id});
+        m_relationships.push_back({source_id, target_id, kind});
     }
 };
 
-std::ostream& operator<<(std::ostream& stream, diagram& diag)
+std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 {
     jg::svg_writer svg{stream, diag.m_size};
     svg.write_background();
@@ -119,8 +124,8 @@ std::ostream& operator<<(std::ostream& stream, diagram& diag)
 
     for (const auto& relation : diag.m_relationships)
     {
-        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids[relation.source]]);
-        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids[relation.target]]);
+        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(relation.source)]);
+        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(relation.target)]);
 
         std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
@@ -217,10 +222,10 @@ int main()
     diag.add_shape(box{{550, 300, 300, 50}, "Box 3", 3});
     diag.add_shape(box{{50, 250, 300, 50}, "Box 4", 4});
 
-    diag.add_relation(1, 2);
-    diag.add_relation(2, 3);
-    diag.add_relation(3, 4);
-    diag.add_relation(4, 1);
+    diag.add_relation(1, 2, relationship_kind::filled_arrow);
+    diag.add_relation(2, 3, relationship_kind::filled_arrow);
+    diag.add_relation(3, 4, relationship_kind::filled_arrow);
+    diag.add_relation(4, 1, relationship_kind::filled_arrow);
     
     std::cout << diag;
 }
