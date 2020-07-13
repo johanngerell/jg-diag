@@ -80,8 +80,16 @@ struct svg_text_attributes final
     std::string font_weight{"normal"};
     std::string fill{"black"};
     std::string stroke{"none"};
+    std::string stroke_width{"1"};
     svg_text_anchor text_anchor{svg_text_anchor::start};
     svg_dominant_baseline dominant_baseline{svg_dominant_baseline::middle};
+};
+
+struct svg_circle_attributes final
+{
+    std::string fill{"black"};
+    std::string stroke{"none"};
+    std::string stroke_width{"1"};
 };
 
 class svg_writer final
@@ -170,11 +178,14 @@ public:
         tag.write_attribute("x1", p1.x);
         tag.write_attribute("y1", p1.y);
 
-        const size_t x_correction = p2.x == p1.x ? 0 : (m_arrowhead_length * (p2.x > p1.x ? -1 : 1));
-        tag.write_attribute("x2", p2.x + x_correction);
+        const float dx = (float)p2.x - (float)p1.x;
+        const float dy = (float)p2.y - (float)p1.y;
+        const float distance = std::hypotf(dx, dy);
+        const float ddx = (float)m_arrowhead_length * dx / distance;
+        const float ddy = (float)m_arrowhead_length * dy / distance;
 
-        const auto y_correction = p2.y == p1.y ? 0 : (m_arrowhead_length * (p2.y > p1.y ? -1 : 1));
-        tag.write_attribute("y2", p2.y + y_correction);
+        tag.write_attribute("x2", (size_t)((float)p2.x - ddx));
+        tag.write_attribute("y2", (size_t)((float)p2.y - ddy));
 
         tag.write_attribute("stroke", attributes.stroke);
         tag.write_attribute("stroke-width", attributes.stroke_width);
@@ -206,6 +217,17 @@ public:
         tag.write_attribute("fill", attributes.fill);
         tag.write_attribute("stroke", attributes.stroke);
         tag.write_text(text);
+    }
+
+    void write_circle(svg_point point, size_t radius, const svg_circle_attributes& attributes)
+    {
+        auto tag = xml_writer::child_element(m_root, "circle");
+        tag.write_attribute("cx", point.x);
+        tag.write_attribute("cy", point.y);
+        tag.write_attribute("r", radius);
+        tag.write_attribute("fill", attributes.fill);
+        tag.write_attribute("stroke", attributes.stroke);
+        tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
 private:
