@@ -62,7 +62,7 @@ public:
 
 class diagram final
 {
-    jg::size m_size;
+    jg::size m_extent;
     std::vector<std::variant<box>> m_shapes;
     std::unordered_map<size_t, size_t> m_shape_ids; // id, index
     std::vector<relationship> m_relationships;
@@ -70,26 +70,32 @@ class diagram final
     friend std::ostream& operator<<(std::ostream&, const diagram&);
 
 public:
-    diagram(jg::size size)
-        : m_size{std::move(size)}
-    {}
-
-    template <typename T>
-    void add_shape(T&& shape)
+    diagram(jg::size extent, size_t capacity = 0)
+        : m_extent{std::move(extent)}
     {
-        m_shapes.push_back(std::move(shape));
-        m_shape_ids[std::get<box>(m_shapes.back()).id()] = m_shapes.size() - 1;
+        m_shapes.reserve(capacity);
     }
 
-    void add_relation(size_t source_id, size_t target_id, relationship_kind kind)
+    template <typename T>
+    const T& shape(T&& shape)
     {
-        m_relationships.push_back({source_id, target_id, kind});
+        m_shapes.push_back(std::move(shape));
+        const auto& back = std::get<box>(m_shapes.back());
+        m_shape_ids[back.id()] = m_shapes.size() - 1;
+
+        return back;
+    }
+
+    template <typename T1, typename T2>
+    void relation(const T1& shape1, const T2& shape2, relationship_kind kind)
+    {
+        m_relationships.push_back({shape1.id(), shape2.id(), kind});
     }
 };
 
 std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 {
-    jg::svg_writer svg{stream, diag.m_size};
+    jg::svg_writer svg{stream, diag.m_extent};
     svg.write_background();
     svg.write_grid(50);
 
@@ -215,17 +221,17 @@ int main()
     std::cout << json;
     */
 
-    diagram diag{{1024, 768}};
+    diagram diag{{1024, 768}, 4};
 
-    diag.add_shape(box{{50, 50, 300, 50}, "Box 1", 1});
-    diag.add_shape(box{{500, 50, 300, 50}, "Box 2", 2});
-    diag.add_shape(box{{550, 300, 300, 50}, "Box 3", 3});
-    diag.add_shape(box{{50, 250, 300, 50}, "Box 4", 4});
+    const auto& box1 = diag.shape(box{{50, 50, 300, 50}, "Box 1", 1});
+    const auto& box2 = diag.shape(box{{500, 50, 300, 50}, "Box 2", 2});
+    const auto& box3 = diag.shape(box{{550, 300, 300, 50}, "Box 3", 3});
+    const auto& box4 = diag.shape(box{{50, 250, 300, 50}, "Box 4", 4});
 
-    diag.add_relation(1, 2, relationship_kind::filled_arrow);
-    diag.add_relation(2, 3, relationship_kind::filled_arrow);
-    diag.add_relation(3, 4, relationship_kind::filled_arrow);
-    diag.add_relation(4, 1, relationship_kind::filled_arrow);
+    diag.relation(box1, box2, relationship_kind::filled_arrow);
+    diag.relation(box2, box3, relationship_kind::filled_arrow);
+    diag.relation(box3, box4, relationship_kind::filled_arrow);
+    diag.relation(box4, box1, relationship_kind::filled_arrow);
     
     std::cout << diag;
 }
