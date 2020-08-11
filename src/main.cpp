@@ -6,9 +6,9 @@
 class box final
 {
 public:
-    box(jg::rect bounds, std::string text, size_t id)
-        : m_bounds{std::move(bounds)}
-        , m_text{std::move(text)}
+    box(jg::rect bounds, std::string_view text, size_t id)
+        : m_bounds{bounds}
+        , m_text{text}
         , m_id{id}
     {
         m_anchors.push_back({m_bounds.x                     , m_bounds.y + m_bounds.height / 2});
@@ -47,39 +47,31 @@ private:
     std::vector<jg::point> m_anchors;
 };
 
-enum class relationship_kind
+enum class line_kind
 {
     filled_arrow
 };
 
-class relationship final
+class line_info final
 {
 public:
     size_t source{};
     size_t target{};
-    relationship_kind kind{};
+    line_kind kind{};
 };
 
 class diagram final
 {
-    jg::size m_extent;
-    std::vector<std::variant<box>> m_shapes;
-    std::unordered_map<size_t, size_t> m_shape_ids; // id, index
-    std::vector<relationship> m_relationships;
-
-    friend std::ostream& operator<<(std::ostream&, const diagram&);
-
 public:
     diagram(jg::size extent, size_t capacity = 0)
-        : m_extent{std::move(extent)}
+        : m_extent{extent}
     {
         m_shapes.reserve(capacity);
     }
 
-    template <typename T>
-    const T& shape(T&& shape)
+    const box& add_box(jg::rect bounds, std::string_view text)
     {
-        m_shapes.push_back(std::move(shape));
+        m_shapes.push_back(box{bounds, text, new_id()});
         const auto& back = std::get<box>(m_shapes.back());
         m_shape_ids[back.id()] = m_shapes.size() - 1;
 
@@ -87,10 +79,24 @@ public:
     }
 
     template <typename T1, typename T2>
-    void relation(const T1& shape1, const T2& shape2, relationship_kind kind)
+    void add_line(const T1& source, const T2& target, line_kind kind)
     {
-        m_relationships.push_back({shape1.id(), shape2.id(), kind});
+        m_lines.push_back({source.id(), target.id(), kind});
     }
+
+private:
+    static size_t new_id()
+    {
+        static size_t id = 0;
+        return ++id;
+    }
+
+    friend std::ostream& operator<<(std::ostream&, const diagram&);
+
+    jg::size m_extent;
+    std::vector<std::variant<box>> m_shapes;
+    std::unordered_map<size_t, size_t> m_shape_ids; // id, index
+    std::vector<line_info> m_lines;
 };
 
 std::ostream& operator<<(std::ostream& stream, const diagram& diag)
@@ -128,10 +134,10 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
     jg::svg_line_attributes default_line;
     default_line.stroke_width = "3";
 
-    for (const auto& relation : diag.m_relationships)
+    for (const auto& line : diag.m_lines)
     {
-        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(relation.source)]);
-        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(relation.target)]);
+        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.source)]);
+        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.target)]);
 
         std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
@@ -171,29 +177,30 @@ int main()
             {
                 "type": "box",
                 "rect": [50, 50, 300, 50],
-                "text": "Box 1",
-                "id": 1
+                "text": "Box 1"
             },
             {
                 "type": "box",
                 "rect": [500, 50, 300, 50],
-                "text": "Box 2",
-                "id": 2
+                "text": "Box 2"
             },
             {
                 "type": "box",
                 "rect": [550, 300, 300, 50],
-                "text": "Box 3",
-                "id": 3
+                "text": "Box 3"
             },
             {
                 "type": "box",
                 "rect": [50, 250, 300, 50],
-                "text": "Box 4",
-                "id": 4
+                "text": "Box 4"
             }
         ],
-        "relations": [
+        "lines": [
+            {
+                "source": 0,
+                "target": 1,
+                "kind": "black_arrow"
+            },
             {
                 "source": 1,
                 "target": 2,
@@ -208,11 +215,6 @@ int main()
                 "source": 3,
                 "target": 4,
                 "kind": "black_arrow"
-            },
-            {
-                "source": 4,
-                "target": 1,
-                "kind": "black_arrow"
             }
         ]
     }
@@ -223,15 +225,15 @@ int main()
 
     diagram diag{{1024, 768}, 4};
 
-    const auto& box1 = diag.shape(box{{50, 50, 300, 50}, "Box 1", 1});
-    const auto& box2 = diag.shape(box{{500, 50, 300, 50}, "Box 2", 2});
-    const auto& box3 = diag.shape(box{{550, 300, 300, 50}, "Box 3", 3});
-    const auto& box4 = diag.shape(box{{50, 250, 300, 50}, "Box 4", 4});
+    const box& box1 = diag.add_box({100, 100, 300, 50}, "Box 1");
+    const box& box2 = diag.add_box({500, 50, 300, 50}, "Box 2");
+    const box& box3 = diag.add_box({550, 300, 300, 50}, "Box 3");
+    const box& box4 = diag.add_box({50, 250, 300, 50}, "Box 4");
 
-    diag.relation(box1, box2, relationship_kind::filled_arrow);
-    diag.relation(box2, box3, relationship_kind::filled_arrow);
-    diag.relation(box3, box4, relationship_kind::filled_arrow);
-    diag.relation(box4, box1, relationship_kind::filled_arrow);
+    diag.add_line(box1, box2, line_kind::filled_arrow);
+    diag.add_line(box2, box3, line_kind::filled_arrow);
+    diag.add_line(box3, box4, line_kind::filled_arrow);
+    diag.add_line(box4, box1, line_kind::filled_arrow);
     
     std::cout << diag;
 }
