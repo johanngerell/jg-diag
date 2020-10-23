@@ -214,6 +214,18 @@ public:
         tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
+    void write_ellipse(jg::point point, size_t xradius, size_t yradius, const svg_rect_attributes& attributes)
+    {
+        auto tag = xml_writer::child_element(m_root, "ellipse");
+        tag.write_attribute("cx", point.x);
+        tag.write_attribute("cy", point.y);
+        tag.write_attribute("rx", xradius);
+        tag.write_attribute("ry", yradius);
+        tag.write_attribute("fill", attributes.fill);
+        tag.write_attribute("stroke", attributes.stroke);
+        tag.write_attribute("stroke-width", attributes.stroke_width);
+    }
+
 private:
     std::ostream& m_stream;
     jg::size m_size;

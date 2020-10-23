@@ -5,10 +5,44 @@
 #include <map>
 #include <unordered_map>
 
-class box final
+class rectangle final
 {
 public:
-    box(jg::rect bounds, std::string_view text)
+    rectangle(jg::rect bounds, std::string_view text)
+        : m_bounds{bounds}
+        , m_text{text}
+    {
+        m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
+        m_anchors[1] = {m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2};
+        m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
+        m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
+    }
+
+    jg::rect bounds() const
+    {
+        return m_bounds;
+    }
+
+    std::string_view text() const
+    {
+        return m_text;
+    }
+
+    const std::array<jg::point, 4>& anchors() const
+    {
+        return m_anchors;
+    }
+
+private:
+    jg::rect m_bounds;
+    std::string m_text;
+    std::array<jg::point, 4> m_anchors;
+};
+
+class ellipse final
+{
+public:
+    ellipse(jg::rect bounds, std::string_view text)
         : m_bounds{bounds}
         , m_text{text}
     {
@@ -57,24 +91,30 @@ public:
 class diagram final
 {
 public:
-    entity_id add_box(box&& b)
+    template <typename T>
+    entity_id entity(T&& b)
     {
         const auto id = new_id();
-        auto& shape = m_shapes.insert({id, std::move(b)}).first->second;
-        const auto& bounds = std::get<box>(shape).bounds();
+        const auto& shape = m_shapes.insert({id, std::move(b)}).first->second;
+        
+        std::visit([&](const auto& b)
+        {
+            const auto& bounds = b.bounds();
 
-        if (bounds.x + bounds.width > m_extent.width - 50)
-            m_extent.width = bounds.x + bounds.width + 50;
+            if (bounds.x + bounds.width > m_extent.width - 50)
+                m_extent.width = bounds.x + bounds.width + 50;
 
-        if (bounds.y + bounds.height > m_extent.height - 50)
-            m_extent.height = bounds.y + bounds.height + 50;
+            if (bounds.y + bounds.height > m_extent.height - 50)
+                m_extent.height = bounds.y + bounds.height + 50;
+        }, shape);
         
         return id;
     }
 
-    void add_line(line&& l)
+    entity_id entity(line&& l)
     {
         m_lines.push_back(std::move(l));
+        return 0;
     }
 
 private:
@@ -87,9 +127,13 @@ private:
     friend std::ostream& operator<<(std::ostream&, const diagram&);
 
     jg::size m_extent;
-    std::map<entity_id, std::variant<box>> m_shapes;
+    std::map<entity_id, std::variant<rectangle, ellipse>> m_shapes;
     std::vector<line> m_lines;
 };
+
+// https://www.bfilipek.com/2018/06/variant.html#overload
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
 std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 {
@@ -113,31 +157,49 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
     for (const auto& [_, shape] : diag.m_shapes)
     {
-        std::visit([&](const auto& b) {
-            const auto bounds = b.bounds();
-            svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
-            svg.write_text({bounds.x + text_offset, bounds.y + bounds.height / 2}, default_text, b.text());
+        std::visit(overload{
+            [&](const rectangle& b) {
+                const auto bounds = b.bounds();
+                svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                svg.write_text({bounds.x + text_offset, bounds.y + bounds.height / 2}, default_text, b.text());
 
-            for (const auto& anchor : b.anchors())
-                svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
-        },
-        shape);
-    }
+                // for (const auto& anchor : b.anchors())
+                //     svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
+            },
+            [&](const ellipse& b) {
+                const auto bounds = b.bounds();
+                svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
+                svg.write_text({bounds.x + text_offset * 4, bounds.y + bounds.height / 2}, default_text, b.text());
+
+                // for (const auto& anchor : b.anchors())
+                //     svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
+            }
+        }, shape);
+    };
 
     jg::svg_line_attributes default_line;
     default_line.stroke_width = "3";
 
     for (const auto& line : diag.m_lines)
     {
-        const auto& source = std::get<box>(diag.m_shapes.find(line.source_id)->second);
-        const auto& target = std::get<box>(diag.m_shapes.find(line.target_id)->second);
+        std::array<jg::point, 4> source_anchors;
+        std::visit([&] (const auto& source)
+        {
+            source_anchors = source.anchors();
+        }, diag.m_shapes.find(line.source_id)->second);
+
+        std::array<jg::point, 4> target_anchors;
+        std::visit([&] (const auto& target)
+        {
+            target_anchors = target.anchors();
+        }, diag.m_shapes.find(line.target_id)->second);
 
         std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
 
-        for (const auto& source_anchor : source.anchors())
+        for (const auto& source_anchor : source_anchors)
         {
-            for (const auto& target_anchor : target.anchors())
+            for (const auto& target_anchor : target_anchors)
             {
                 const float dx = target_anchor.x - source_anchor.x;
                 const float dy = target_anchor.y - source_anchor.y;
@@ -218,15 +280,15 @@ int main()
 {
     diagram diag;
 
-    const auto& box1 = diag.add_box({{100, 100, 300, 50}, "Box 1"});
-    const auto& box2 = diag.add_box({{500,  50, 300, 50}, "Box 2"});
-    const auto& box3 = diag.add_box({{550, 300, 300, 50}, "Box 3"});
-    const auto& box4 = diag.add_box({{ 50, 250, 300, 50}, "Box 4"});
+    const auto& entity1 = diag.entity(rectangle{{100, 100, 300,  50}, "Rectangle 1"});
+    const auto& entity2 = diag.entity(ellipse  {{500,  50, 300, 100}, "Ellipse 1"});
+    const auto& entity3 = diag.entity(rectangle{{550, 300, 300, 100}, "Rectangle 2"});
+    const auto& entity4 = diag.entity(ellipse  {{ 50, 250, 300,  50}, "Ellipse 2"});
 
-    diag.add_line({box1, box2, line_kind::filled_arrow});
-    diag.add_line({box2, box3, line_kind::filled_arrow});
-    diag.add_line({box3, box4, line_kind::filled_arrow});
-    diag.add_line({box4, box1, line_kind::filled_arrow});
+    diag.entity(line{entity1, entity2, line_kind::filled_arrow});
+    diag.entity(line{entity2, entity3, line_kind::filled_arrow});
+    diag.entity(line{entity3, entity4, line_kind::filled_arrow});
+    diag.entity(line{entity4, entity1, line_kind::filled_arrow});
     
     std::cout << diag;
 }
