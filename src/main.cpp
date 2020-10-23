@@ -2,14 +2,14 @@
 #include <variant>
 #include <vector>
 #include <array>
+#include <map>
 #include <unordered_map>
 
 class box final
 {
 public:
-    box(jg::rect bounds, std::string_view text, size_t id)
-        : m_id{id}
-        , m_bounds{bounds}
+    box(jg::rect bounds, std::string_view text)
+        : m_bounds{bounds}
         , m_text{text}
     {
         m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
@@ -17,9 +17,6 @@ public:
         m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
         m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
     }
-
-    box(box&&) = default;
-    box& operator=(box&&) = default;
 
     jg::rect bounds() const
     {
@@ -31,22 +28,18 @@ public:
         return m_text;
     }
 
-    size_t id() const
-    {
-        return m_id;
-    }
-
     const std::array<jg::point, 4>& anchors() const
     {
         return m_anchors;
     }
 
 private:
-    size_t m_id;
     jg::rect m_bounds;
     std::string m_text;
     std::array<jg::point, 4> m_anchors;
 };
+
+using entity_id = size_t;
 
 enum class line_kind
 {
@@ -56,27 +49,27 @@ enum class line_kind
 class line final
 {
 public:
-    size_t source_id{};
-    size_t target_id{};
+    entity_id source_id{};
+    entity_id target_id{};
     line_kind kind{};
 };
 
 class diagram final
 {
 public:
-    void add_box(box&& b)
+    entity_id add_box(box&& b)
     {
-        m_shapes.push_back(std::move(b));
-        const auto& back = std::get<box>(m_shapes.back());
-        m_shape_ids[back.id()] = m_shapes.size() - 1;
-
-        const auto bounds = back.bounds();
+        const auto id = new_id();
+        auto& shape = m_shapes.insert({id, std::move(b)}).first->second;
+        const auto& bounds = std::get<box>(shape).bounds();
 
         if (bounds.x + bounds.width > m_extent.width - 50)
             m_extent.width = bounds.x + bounds.width + 50;
 
         if (bounds.y + bounds.height > m_extent.height - 50)
             m_extent.height = bounds.y + bounds.height + 50;
+        
+        return id;
     }
 
     void add_line(line&& l)
@@ -85,11 +78,16 @@ public:
     }
 
 private:
+    static entity_id new_id()
+    {
+        static entity_id id;
+        return ++id;
+    }
+
     friend std::ostream& operator<<(std::ostream&, const diagram&);
 
     jg::size m_extent;
-    std::vector<std::variant<box>> m_shapes;
-    std::unordered_map<size_t, size_t> m_shape_ids; // id, index
+    std::map<entity_id, std::variant<box>> m_shapes;
     std::vector<line> m_lines;
 };
 
@@ -113,7 +111,7 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
     jg::svg_circle_attributes default_circle;
     default_circle.fill = "red";
 
-    for (const auto& shape : diag.m_shapes)
+    for (const auto& [_, shape] : diag.m_shapes)
     {
         std::visit([&](const auto& b) {
             const auto bounds = b.bounds();
@@ -131,8 +129,8 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
     for (const auto& line : diag.m_lines)
     {
-        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.source_id)]);
-        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.target_id)]);
+        const auto& source = std::get<box>(diag.m_shapes.find(line.source_id)->second);
+        const auto& target = std::get<box>(diag.m_shapes.find(line.target_id)->second);
 
         std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
@@ -220,15 +218,15 @@ int main()
 {
     diagram diag;
 
-    diag.add_box({{100, 100, 300, 50}, "Box 1", 1});
-    diag.add_box({{500,  50, 300, 50}, "Box 2", 2});
-    diag.add_box({{550, 300, 300, 50}, "Box 3", 3});
-    diag.add_box({{ 50, 250, 300, 50}, "Box 4", 4});
+    const auto& box1 = diag.add_box({{100, 100, 300, 50}, "Box 1"});
+    const auto& box2 = diag.add_box({{500,  50, 300, 50}, "Box 2"});
+    const auto& box3 = diag.add_box({{550, 300, 300, 50}, "Box 3"});
+    const auto& box4 = diag.add_box({{ 50, 250, 300, 50}, "Box 4"});
 
-    diag.add_line({1, 2, line_kind::filled_arrow});
-    diag.add_line({2, 3, line_kind::filled_arrow});
-    diag.add_line({3, 4, line_kind::filled_arrow});
-    diag.add_line({4, 1, line_kind::filled_arrow});
+    diag.add_line({box1, box2, line_kind::filled_arrow});
+    diag.add_line({box2, box3, line_kind::filled_arrow});
+    diag.add_line({box3, box4, line_kind::filled_arrow});
+    diag.add_line({box4, box1, line_kind::filled_arrow});
     
     std::cout << diag;
 }
