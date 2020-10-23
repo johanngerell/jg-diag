@@ -1,6 +1,7 @@
 #include "jg_svg_writer.h"
 #include <variant>
 #include <vector>
+#include <array>
 #include <unordered_map>
 
 class box final
@@ -11,10 +12,10 @@ public:
         , m_bounds{bounds}
         , m_text{text}
     {
-        m_anchors.push_back({m_bounds.x                     , m_bounds.y + m_bounds.height / 2});
-        m_anchors.push_back({m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2});
-        m_anchors.push_back({m_bounds.x + m_bounds.width / 2, m_bounds.y});
-        m_anchors.push_back({m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height});
+        m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
+        m_anchors[1] = {m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2};
+        m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
+        m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
     }
 
     box(box&&) = default;
@@ -35,7 +36,7 @@ public:
         return m_id;
     }
 
-    const std::vector<jg::point>& anchors() const
+    const std::array<jg::point, 4>& anchors() const
     {
         return m_anchors;
     }
@@ -44,7 +45,7 @@ private:
     size_t m_id;
     jg::rect m_bounds;
     std::string m_text;
-    std::vector<jg::point> m_anchors;
+    std::array<jg::point, 4> m_anchors;
 };
 
 enum class line_kind
@@ -103,9 +104,10 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
     default_rect.stroke = "black";
     default_rect.stroke_width = "3";
 
-    constexpr float text_offset = 12.5; // 25 / 2
+    constexpr float font_size = 25;
+    constexpr float text_offset = font_size / 2;
     jg::svg_text_attributes default_text;
-    default_text.font_size = "25";
+    default_text.font_size = std::to_string(font_size);
     default_text.font_weight = "bold";
 
     jg::svg_circle_attributes default_circle;
