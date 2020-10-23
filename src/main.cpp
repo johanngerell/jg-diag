@@ -53,11 +53,11 @@ enum class line_kind
     filled_arrow
 };
 
-class line_info final
+class line final
 {
 public:
-    size_t source{};
-    size_t target{};
+    size_t source_id{};
+    size_t target_id{};
     line_kind kind{};
 };
 
@@ -66,7 +66,7 @@ class diagram final
 public:
     void add_box(box&& b)
     {
-        m_shapes.emplace_back(std::move(b));
+        m_shapes.push_back(std::move(b));
         const auto& back = std::get<box>(m_shapes.back());
         m_shape_ids[back.id()] = m_shapes.size() - 1;
 
@@ -79,9 +79,9 @@ public:
             m_extent.height = bounds.y + bounds.height + 50;
     }
 
-    void add_line(size_t source_id, size_t target_id, line_kind kind)
+    void add_line(line&& l)
     {
-        m_lines.push_back({source_id, target_id, kind});
+        m_lines.push_back(std::move(l));
     }
 
 private:
@@ -90,7 +90,7 @@ private:
     jg::size m_extent;
     std::vector<std::variant<box>> m_shapes;
     std::unordered_map<size_t, size_t> m_shape_ids; // id, index
-    std::vector<line_info> m_lines;
+    std::vector<line> m_lines;
 };
 
 std::ostream& operator<<(std::ostream& stream, const diagram& diag)
@@ -131,8 +131,8 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
     for (const auto& line : diag.m_lines)
     {
-        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.source)]);
-        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.target)]);
+        const auto& source = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.source_id)]);
+        const auto& target = std::get<box>(diag.m_shapes[diag.m_shape_ids.at(line.target_id)]);
 
         std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
@@ -225,10 +225,10 @@ int main()
     diag.add_box({{550, 300, 300, 50}, "Box 3", 3});
     diag.add_box({{ 50, 250, 300, 50}, "Box 4", 4});
 
-    diag.add_line(1, 2, line_kind::filled_arrow);
-    diag.add_line(2, 3, line_kind::filled_arrow);
-    diag.add_line(3, 4, line_kind::filled_arrow);
-    diag.add_line(4, 1, line_kind::filled_arrow);
+    diag.add_line({1, 2, line_kind::filled_arrow});
+    diag.add_line({2, 3, line_kind::filled_arrow});
+    diag.add_line({3, 4, line_kind::filled_arrow});
+    diag.add_line({4, 1, line_kind::filled_arrow});
     
     std::cout << diag;
 }
