@@ -36,6 +36,8 @@ public:
         m_is_parent = other.m_is_parent;
         other.m_stream = nullptr;
         other.m_is_parent = false;
+
+        return *this;
     }
 
     ~xml_writer()

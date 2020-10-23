@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <jg_verify.h>
 #include "jg_xml_writer.h"
 #include "jg_coordinates.h"
