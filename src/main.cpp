@@ -7,9 +7,9 @@ class box final
 {
 public:
     box(jg::rect bounds, std::string_view text, size_t id)
-        : m_bounds{bounds}
+        : m_id{id}
+        , m_bounds{bounds}
         , m_text{text}
-        , m_id{id}
     {
         m_anchors.push_back({m_bounds.x                     , m_bounds.y + m_bounds.height / 2});
         m_anchors.push_back({m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2});
@@ -63,34 +63,27 @@ public:
 class diagram final
 {
 public:
-    diagram(jg::size extent, size_t capacity = 0)
-        : m_extent{extent}
+    void add_box(box&& b)
     {
-        m_shapes.reserve(capacity);
-    }
-
-    const box& add_box(jg::rect bounds, std::string_view text)
-    {
-        m_shapes.push_back(box{bounds, text, new_id()});
+        m_shapes.emplace_back(std::move(b));
         const auto& back = std::get<box>(m_shapes.back());
         m_shape_ids[back.id()] = m_shapes.size() - 1;
 
-        return back;
+        const auto bounds = back.bounds();
+
+        if (bounds.x + bounds.width > m_extent.width - 50)
+            m_extent.width = bounds.x + bounds.width + 50;
+
+        if (bounds.y + bounds.height > m_extent.height - 50)
+            m_extent.height = bounds.y + bounds.height + 50;
     }
 
-    template <typename T1, typename T2>
-    void add_line(const T1& source, const T2& target, line_kind kind)
+    void add_line(size_t source_id, size_t target_id, line_kind kind)
     {
-        m_lines.push_back({source.id(), target.id(), kind});
+        m_lines.push_back({source_id, target_id, kind});
     }
 
 private:
-    static size_t new_id()
-    {
-        static size_t id = 0;
-        return ++id;
-    }
-
     friend std::ostream& operator<<(std::ostream&, const diagram&);
 
     jg::size m_extent;
@@ -168,9 +161,7 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
     return stream;
 }
 
-int main()
-{
-    /*
+/*
     const char* json = R"json(
     {
         "shapes": [
@@ -221,19 +212,21 @@ int main()
     )json";
     
     std::cout << json;
-    */
+*/
 
-    diagram diag{{1024, 768}, 4};
+int main()
+{
+    diagram diag;
 
-    const box& box1 = diag.add_box({100, 100, 300, 50}, "Box 1");
-    const box& box2 = diag.add_box({500, 50, 300, 50}, "Box 2");
-    const box& box3 = diag.add_box({550, 300, 300, 50}, "Box 3");
-    const box& box4 = diag.add_box({50, 250, 300, 50}, "Box 4");
+    diag.add_box({{100, 100, 300, 50}, "Box 1", 1});
+    diag.add_box({{500,  50, 300, 50}, "Box 2", 2});
+    diag.add_box({{550, 300, 300, 50}, "Box 3", 3});
+    diag.add_box({{ 50, 250, 300, 50}, "Box 4", 4});
 
-    diag.add_line(box1, box2, line_kind::filled_arrow);
-    diag.add_line(box2, box3, line_kind::filled_arrow);
-    diag.add_line(box3, box4, line_kind::filled_arrow);
-    diag.add_line(box4, box1, line_kind::filled_arrow);
+    diag.add_line(1, 2, line_kind::filled_arrow);
+    diag.add_line(2, 3, line_kind::filled_arrow);
+    diag.add_line(3, 4, line_kind::filled_arrow);
+    diag.add_line(4, 1, line_kind::filled_arrow);
     
     std::cout << diag;
 }
