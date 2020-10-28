@@ -5,18 +5,16 @@
 #include <map>
 #include <unordered_map>
 
+namespace shapes
+{
+
 class rectangle final
 {
 public:
     rectangle(jg::rect bounds, std::string_view text)
         : m_bounds{bounds}
         , m_text{text}
-    {
-        m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
-        m_anchors[1] = {m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2};
-        m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
-        m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
-    }
+    {}
 
     jg::rect bounds() const
     {
@@ -28,15 +26,20 @@ public:
         return m_text;
     }
 
-    const std::array<jg::point, 4>& anchors() const
+    std::array<jg::point, 4> anchors() const
     {
-        return m_anchors;
+        return
+        {
+            jg::point{m_bounds.x                     , m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
+        };
     }
 
 private:
     jg::rect m_bounds;
     std::string m_text;
-    std::array<jg::point, 4> m_anchors;
 };
 
 class rhombus final
@@ -45,12 +48,7 @@ public:
     rhombus(jg::rect bounds, std::string_view text)
         : m_bounds{bounds}
         , m_text{text}
-    {
-        m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
-        m_anchors[1] = {m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2};
-        m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
-        m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
-    }
+    {}
 
     jg::rect bounds() const
     {
@@ -62,15 +60,54 @@ public:
         return m_text;
     }
 
-    const std::array<jg::point, 4>& anchors() const
+    std::array<jg::point, 4> anchors() const
     {
-        return m_anchors;
+        return
+        {
+            jg::point{m_bounds.x                     , m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
+        };
     }
 
 private:
     jg::rect m_bounds;
     std::string m_text;
-    std::array<jg::point, 4> m_anchors;
+};
+
+class parallelogram final
+{
+public:
+    parallelogram(jg::rect bounds, std::string_view text)
+        : m_bounds{bounds}
+        , m_text{text}
+    {}
+
+    jg::rect bounds() const
+    {
+        return m_bounds;
+    }
+
+    std::string_view text() const
+    {
+        return m_text;
+    }
+
+    std::array<jg::point, 4> anchors() const
+    {
+        return
+        {
+            jg::point{m_bounds.x + m_bounds.height / 2, m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.height + (m_bounds.width - m_bounds.height) / 2, m_bounds.y},
+            jg::point{m_bounds.x + m_bounds.width - m_bounds.height / 2, m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + (m_bounds.width - m_bounds.height) / 2, m_bounds.y + m_bounds.height}
+        };
+    }
+
+private:
+    jg::rect m_bounds;
+    std::string m_text;
 };
 
 class ellipse final
@@ -79,12 +116,7 @@ public:
     ellipse(jg::rect bounds, std::string_view text)
         : m_bounds{bounds}
         , m_text{text}
-    {
-        m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
-        m_anchors[1] = {m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2};
-        m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
-        m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
-    }
+    {}
 
     jg::rect bounds() const
     {
@@ -96,18 +128,28 @@ public:
         return m_text;
     }
 
-    const std::array<jg::point, 4>& anchors() const
+    std::array<jg::point, 4> anchors() const
     {
-        return m_anchors;
+        return
+        {
+            jg::point{m_bounds.x                     , m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
+        };
     }
 
 private:
     jg::rect m_bounds;
     std::string m_text;
-    std::array<jg::point, 4> m_anchors;
 };
 
+} // namespace shapes
+
 using entity_id = size_t;
+
+namespace shapes
+{
 
 enum class line_kind
 {
@@ -121,6 +163,8 @@ public:
     entity_id target_id{};
     line_kind kind{};
 };
+
+} // namespace shapes
 
 class diagram final
 {
@@ -145,7 +189,7 @@ public:
         return id;
     }
 
-    entity_id entity(line&& l)
+    entity_id entity(shapes::line&& l)
     {
         m_lines.push_back(std::move(l));
         return 0;
@@ -161,8 +205,8 @@ private:
     friend std::ostream& operator<<(std::ostream&, const diagram&);
 
     jg::size m_extent;
-    std::map<entity_id, std::variant<rectangle, rhombus, ellipse>> m_shapes;
-    std::vector<line> m_lines;
+    std::map<entity_id, std::variant<shapes::rectangle, shapes::rhombus, shapes::parallelogram, shapes::ellipse>> m_shapes;
+    std::vector<shapes::line> m_lines;
 };
 
 // https://www.bfilipek.com/2018/06/variant.html#overload
@@ -194,15 +238,19 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
         std::visit(overload
         {
-            [&](const rectangle&)
+            [&](const shapes::rectangle&)
             {
                 svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
             },
-            [&](const rhombus&)
+            [&](const shapes::rhombus&)
             {
                 svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
             },
-            [&](const ellipse&)
+            [&](const shapes::parallelogram&)
+            {
+                svg.write_parallelogram({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+            },
+            [&](const shapes::ellipse&)
             {
                 svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
             }
@@ -317,17 +365,22 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
 int main()
 {
+    using namespace shapes;
+
     diagram diag;
 
-    const auto& entity1 = diag.entity(rectangle{{100, 100, 300,  50}, "Rectangle"});
-    const auto& entity2 = diag.entity(ellipse  {{500,  50, 300, 100}, "Ellipse 1"});
-    const auto& entity3 = diag.entity(rhombus{{550, 400, 300, 100}, "Rhombus"});
-    const auto& entity4 = diag.entity(ellipse  {{ 50, 250, 300,  50}, "Ellipse 2"});
+    const std::array entities
+    {
+        diag.entity(rectangle    {{100, 100, 300, 100}, "Rectangle"}),
+        diag.entity(ellipse      {{500,  50, 300, 100}, "Ellipse"}),
+        diag.entity(rhombus      {{550, 400, 300, 100}, "Rhombus"}),
+        diag.entity(parallelogram{{ 50, 300, 400, 100}, "Parallelogram"})
+    };
 
-    diag.entity(line{entity1, entity2, line_kind::filled_arrow});
-    diag.entity(line{entity2, entity3, line_kind::filled_arrow});
-    diag.entity(line{entity3, entity4, line_kind::filled_arrow});
-    diag.entity(line{entity4, entity1, line_kind::filled_arrow});
+    diag.entity(line{entities[0], entities[1], line_kind::filled_arrow});
+    diag.entity(line{entities[1], entities[2], line_kind::filled_arrow});
+    diag.entity(line{entities[2], entities[3], line_kind::filled_arrow});
+    diag.entity(line{entities[3], entities[0], line_kind::filled_arrow});
     
     std::cout << diag;
 }
