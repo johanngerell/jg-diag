@@ -169,6 +169,10 @@ public:
 class diagram final
 {
 public:
+    diagram(std::string_view title = "")
+        : m_title{title}
+    {}
+
     template <typename T>
     item_id add_item(T&& item)
     {
@@ -189,10 +193,9 @@ public:
         return id;
     }
 
-    item_id add_item(line&& item)
+    void add_item(line&& item)
     {
         m_lines.push_back(std::move(item));
-        return 0;
     }
 
 private:
@@ -204,6 +207,7 @@ private:
 
     friend std::ostream& ::operator<<(std::ostream&, const diagram&);
 
+    std::string m_title;
     jg::size m_extent;
     std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse>> m_items;
     std::vector<line> m_lines;
@@ -220,6 +224,7 @@ std::ostream& operator<<(std::ostream& stream, const jg::diagram& diagram)
     jg::svg_writer svg{stream, diagram.m_extent};
     svg.write_background();
     svg.write_grid(50);
+    svg.write_title(diagram.m_title);
 
     jg::svg_rect_attributes default_rect;
     default_rect.fill = "#d7eff6";
@@ -367,9 +372,9 @@ std::ostream& operator<<(std::ostream& stream, const jg::diagram& diagram)
 
 int main()
 {
-    jg::diagram diagram;
+    jg::diagram diagram{"jg-diagram-sample"};
 
-    const std::array items
+    const std::array item_ids
     {
         diagram.add_item(jg::rectangle    {{ 50, 100, 300, 100}, "Rectangle"}),
         diagram.add_item(jg::ellipse      {{500,  50, 300, 100}, "Ellipse"}),
@@ -377,10 +382,10 @@ int main()
         diagram.add_item(jg::parallelogram{{100, 300, 400, 100}, "Parallelogram"})
     };
 
-    diagram.add_item(jg::line{items[0], items[1], jg::line_kind::filled_arrow});
-    diagram.add_item(jg::line{items[1], items[2], jg::line_kind::filled_arrow});
-    diagram.add_item(jg::line{items[2], items[3], jg::line_kind::filled_arrow});
-    diagram.add_item(jg::line{items[3], items[0], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{item_ids[0], item_ids[1], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{item_ids[1], item_ids[2], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{item_ids[2], item_ids[3], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{item_ids[3], item_ids[0], jg::line_kind::filled_arrow});
     
     std::cout << diagram;
 }

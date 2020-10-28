@@ -134,6 +134,20 @@ public:
             write_line({0, f}, {m_size.width, f}, attributes);
     }
 
+    void write_title(std::string_view title)
+    {
+        if (title.empty())
+            return;
+
+        constexpr float font_size = 25;
+        svg_text_attributes attributes;
+        attributes.text_anchor = svg_text_anchor::start;
+        attributes.font_size = std::to_string(font_size);;
+        attributes.font_weight = "bold";
+
+        write_text({font_size / 2, font_size}, attributes, title);
+    }
+
     void write_border(std::string_view color = "black")
     {
         auto tag = xml_writer::child_element(m_root, "rect");
