@@ -186,11 +186,11 @@ public:
         {
             const auto& bounds = i.bounds();
 
-            if (bounds.x + bounds.width > m_extent.width - 50)
-                m_extent.width = bounds.x + bounds.width + 50;
+            if (bounds.x + bounds.width > m_size.width - 50)
+                m_size.width = bounds.x + bounds.width + 50;
 
-            if (bounds.y + bounds.height > m_extent.height - 50)
-                m_extent.height = bounds.y + bounds.height + 50;
+            if (bounds.y + bounds.height > m_size.height - 50)
+                m_size.height = bounds.y + bounds.height + 50;
 
         }, m_items.insert({id, std::move(item)}).first->second);
 
@@ -204,7 +204,7 @@ public:
 
     void write_svg(std::ostream& stream) const
     {
-        jg::svg_writer svg{stream, m_extent};
+        jg::svg_writer svg{stream, m_size};
         svg.write_background();
         svg.write_grid(50);
 
@@ -218,8 +218,8 @@ public:
         default_text.font_size = std::to_string(font_size);
         default_text.font_weight = "bold";
 
-        jg::svg_circle_attributes default_circle;
-        default_circle.fill = "red";
+        jg::svg_circle_attributes marker_circle;
+        marker_circle.fill = "red";
 
         for (const auto& [_, item] : m_items)
         {
@@ -251,8 +251,9 @@ public:
             std::visit([&](const auto& i)
             {
                 svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, i.text());
+                
                 for (const auto& anchor : i.anchors())
-                    svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
+                    svg.write_circle({anchor.x, anchor.y}, 5, marker_circle);
             }, item);
         };
 
@@ -309,7 +310,7 @@ private:
     }
 
     std::string m_title;
-    jg::size m_extent;
+    jg::size m_size;
     std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse>> m_items;
     std::vector<line> m_lines;
 };
