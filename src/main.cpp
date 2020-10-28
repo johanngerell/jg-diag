@@ -207,7 +207,6 @@ public:
         jg::svg_writer svg{stream, m_extent};
         svg.write_background();
         svg.write_grid(50);
-        svg.write_title(m_title);
 
         jg::svg_rect_attributes default_rect;
         default_rect.fill = "#d7eff6";
@@ -298,6 +297,7 @@ public:
                             default_line);
         }
 
+        svg.write_title(m_title);
         svg.write_border();
     }
 
