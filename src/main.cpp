@@ -39,6 +39,40 @@ private:
     std::array<jg::point, 4> m_anchors;
 };
 
+class rhombus final
+{
+public:
+    rhombus(jg::rect bounds, std::string_view text)
+        : m_bounds{bounds}
+        , m_text{text}
+    {
+        m_anchors[0] = {m_bounds.x                     , m_bounds.y + m_bounds.height / 2};
+        m_anchors[1] = {m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2};
+        m_anchors[2] = {m_bounds.x + m_bounds.width / 2, m_bounds.y};
+        m_anchors[3] = {m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height};
+    }
+
+    jg::rect bounds() const
+    {
+        return m_bounds;
+    }
+
+    std::string_view text() const
+    {
+        return m_text;
+    }
+
+    const std::array<jg::point, 4>& anchors() const
+    {
+        return m_anchors;
+    }
+
+private:
+    jg::rect m_bounds;
+    std::string m_text;
+    std::array<jg::point, 4> m_anchors;
+};
+
 class ellipse final
 {
 public:
@@ -127,7 +161,7 @@ private:
     friend std::ostream& operator<<(std::ostream&, const diagram&);
 
     jg::size m_extent;
-    std::map<entity_id, std::variant<rectangle, ellipse>> m_shapes;
+    std::map<entity_id, std::variant<rectangle, rhombus, ellipse>> m_shapes;
     std::vector<line> m_lines;
 };
 
@@ -147,7 +181,6 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
     default_rect.stroke_width = "3";
 
     constexpr float font_size = 25;
-    constexpr float text_offset = font_size / 2;
     jg::svg_text_attributes default_text;
     default_text.font_size = std::to_string(font_size);
     default_text.font_weight = "bold";
@@ -157,23 +190,29 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
     for (const auto& [_, shape] : diag.m_shapes)
     {
-        std::visit(overload{
-            [&](const rectangle& b) {
-                const auto bounds = b.bounds();
+        const jg::rect bounds = std::visit([&](const auto& b) { return b.bounds(); }, shape);
+
+        std::visit(overload
+        {
+            [&](const rectangle&)
+            {
                 svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
-                svg.write_text({bounds.x + text_offset, bounds.y + bounds.height / 2}, default_text, b.text());
-
-                // for (const auto& anchor : b.anchors())
-                //     svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
             },
-            [&](const ellipse& b) {
-                const auto bounds = b.bounds();
+            [&](const rhombus&)
+            {
+                svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+            },
+            [&](const ellipse&)
+            {
                 svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
-                svg.write_text({bounds.x + text_offset * 4, bounds.y + bounds.height / 2}, default_text, b.text());
-
-                // for (const auto& anchor : b.anchors())
-                //     svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
             }
+        }, shape);
+
+        std::visit([&](const auto& b)
+        {
+            svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, b.text());
+            for (const auto& anchor : b.anchors())
+                svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
         }, shape);
     };
 
@@ -280,9 +319,9 @@ int main()
 {
     diagram diag;
 
-    const auto& entity1 = diag.entity(rectangle{{100, 100, 300,  50}, "Rectangle 1"});
+    const auto& entity1 = diag.entity(rectangle{{100, 100, 300,  50}, "Rectangle"});
     const auto& entity2 = diag.entity(ellipse  {{500,  50, 300, 100}, "Ellipse 1"});
-    const auto& entity3 = diag.entity(rectangle{{550, 300, 300, 100}, "Rectangle 2"});
+    const auto& entity3 = diag.entity(rhombus{{550, 400, 300, 100}, "Rhombus"});
     const auto& entity4 = diag.entity(ellipse  {{ 50, 250, 300,  50}, "Ellipse 2"});
 
     diag.entity(line{entity1, entity2, line_kind::filled_arrow});

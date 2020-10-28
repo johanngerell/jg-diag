@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include <cmath>
 #include <jg_verify.h>
 #include "jg_xml_writer.h"
@@ -65,7 +66,7 @@ struct svg_text_attributes final
     std::string fill{"black"};
     std::string stroke{"none"};
     std::string stroke_width{"1"};
-    svg_text_anchor text_anchor{svg_text_anchor::start};
+    svg_text_anchor text_anchor{svg_text_anchor::middle};
     svg_dominant_baseline dominant_baseline{svg_dominant_baseline::middle};
 };
 
@@ -186,6 +187,28 @@ public:
         tag.write_attribute("stroke", attributes.stroke);
         tag.write_attribute("fill", attributes.fill);
         tag.write_attribute("stroke-width", attributes.stroke_width);
+    }
+
+    void write_rhombus(jg::rect rect, const svg_rect_attributes& attributes)
+    {
+        jg::point p1{rect.x, rect.y + rect.height / 2};
+        jg::point p2{rect.x + rect.width / 2, rect.y};
+        jg::point p3{rect.x + rect.width, rect.y + rect.height / 2};
+        jg::point p4{rect.x + rect.width / 2, rect.y + rect.height};
+
+        std::ostringstream path;
+        path << "M"  << p1.x << " " << p1.y;
+        path << " L" << p2.x << " " << p2.y;
+        path << " L" << p3.x << " " << p3.y;
+        path << " L" << p4.x << " " << p4.y;
+        path << " Z";
+        
+        auto tag = xml_writer::child_element(m_root, "path");
+        tag.write_attribute("d", path.str());
+        tag.write_attribute("stroke", attributes.stroke);
+        tag.write_attribute("fill", attributes.fill);
+        tag.write_attribute("stroke-width", attributes.stroke_width);
+        tag.write_attribute("stroke-linejoin", "bevel");
     }
 
     void write_text(jg::point point, const svg_text_attributes& attributes, std::string_view text)
