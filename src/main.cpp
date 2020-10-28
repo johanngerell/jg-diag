@@ -166,6 +166,10 @@ public:
     line_kind kind{};
 };
 
+// https://www.bfilipek.com/2018/06/variant.html#overload
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
+
 class diagram final
 {
 public:
@@ -198,6 +202,105 @@ public:
         m_lines.push_back(std::move(item));
     }
 
+    void write_svg(std::ostream& stream) const
+    {
+        jg::svg_writer svg{stream, m_extent};
+        svg.write_background();
+        svg.write_grid(50);
+        svg.write_title(m_title);
+
+        jg::svg_rect_attributes default_rect;
+        default_rect.fill = "#d7eff6";
+        default_rect.stroke = "black";
+        default_rect.stroke_width = "3";
+
+        constexpr float font_size = 25;
+        jg::svg_text_attributes default_text;
+        default_text.font_size = std::to_string(font_size);
+        default_text.font_weight = "bold";
+
+        jg::svg_circle_attributes default_circle;
+        default_circle.fill = "red";
+
+        for (const auto& [_, item] : m_items)
+        {
+            const jg::rect bounds = std::visit([&](const auto& i)
+            {
+                return i.bounds();
+            }, item);
+
+            std::visit(jg::overload
+            {
+                [&](const jg::rectangle&)
+                {
+                    svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                },
+                [&](const jg::rhombus&)
+                {
+                    svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                },
+                [&](const jg::parallelogram&)
+                {
+                    svg.write_parallelogram({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                },
+                [&](const jg::ellipse&)
+                {
+                    svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
+                }
+            }, item);
+
+            std::visit([&](const auto& i)
+            {
+                svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, i.text());
+                for (const auto& anchor : i.anchors())
+                    svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
+            }, item);
+        };
+
+        jg::svg_line_attributes default_line;
+        default_line.stroke_width = "3";
+
+        for (const auto& line : m_lines)
+        {
+            const auto source_anchors = std::visit([&] (const auto& source)
+            {
+                return source.anchors();
+            }, m_items.find(line.source_id)->second);
+
+            const auto target_anchors = std::visit([&] (const auto& target)
+            {
+                return target.anchors();
+            }, m_items.find(line.target_id)->second);
+
+            std::pair<jg::point, jg::point> anchors;
+            float shortest_distance = std::numeric_limits<float>::max();
+
+            for (const auto& source_anchor : source_anchors)
+            {
+                for (const auto& target_anchor : target_anchors)
+                {
+                    const float dx = target_anchor.x - source_anchor.x;
+                    const float dy = target_anchor.y - source_anchor.y;
+                    const float distance = std::hypotf(dx, dy);
+
+                    if (distance < shortest_distance)
+                    {
+                        shortest_distance = distance;
+                        anchors = {source_anchor, target_anchor};
+                    }
+                }
+            }
+
+            jg::debug_verify(shortest_distance != std::numeric_limits<float>::max());
+
+            svg.write_arrow({anchors.first.x, anchors.first.y},
+                            {anchors.second.x, anchors.second.y},
+                            default_line);
+        }
+
+        svg.write_border();
+    }
+
 private:
     static item_id new_id()
     {
@@ -205,117 +308,13 @@ private:
         return ++id;
     }
 
-    friend std::ostream& ::operator<<(std::ostream&, const diagram&);
-
     std::string m_title;
     jg::size m_extent;
     std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse>> m_items;
     std::vector<line> m_lines;
 };
 
-// https://www.bfilipek.com/2018/06/variant.html#overload
-template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
-template<class... Ts> overload(Ts...) -> overload<Ts...>;
-
 } // namespace jg
-
-std::ostream& operator<<(std::ostream& stream, const jg::diagram& diagram)
-{
-    jg::svg_writer svg{stream, diagram.m_extent};
-    svg.write_background();
-    svg.write_grid(50);
-    svg.write_title(diagram.m_title);
-
-    jg::svg_rect_attributes default_rect;
-    default_rect.fill = "#d7eff6";
-    default_rect.stroke = "black";
-    default_rect.stroke_width = "3";
-
-    constexpr float font_size = 25;
-    jg::svg_text_attributes default_text;
-    default_text.font_size = std::to_string(font_size);
-    default_text.font_weight = "bold";
-
-    jg::svg_circle_attributes default_circle;
-    default_circle.fill = "red";
-
-    for (const auto& [_, item] : diagram.m_items)
-    {
-        const jg::rect bounds = std::visit([&](const auto& i) { return i.bounds(); }, item);
-
-        std::visit(jg::overload
-        {
-            [&](const jg::rectangle&)
-            {
-                svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
-            },
-            [&](const jg::rhombus&)
-            {
-                svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
-            },
-            [&](const jg::parallelogram&)
-            {
-                svg.write_parallelogram({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
-            },
-            [&](const jg::ellipse&)
-            {
-                svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
-            }
-        }, item);
-
-        std::visit([&](const auto& i)
-        {
-            svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, i.text());
-            for (const auto& anchor : i.anchors())
-                svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
-        }, item);
-    };
-
-    jg::svg_line_attributes default_line;
-    default_line.stroke_width = "3";
-
-    for (const auto& line : diagram.m_lines)
-    {
-        std::array<jg::point, 4> source_anchors;
-        std::visit([&] (const auto& source)
-        {
-            source_anchors = source.anchors();
-        }, diagram.m_items.find(line.source_id)->second);
-
-        std::array<jg::point, 4> target_anchors;
-        std::visit([&] (const auto& target)
-        {
-            target_anchors = target.anchors();
-        }, diagram.m_items.find(line.target_id)->second);
-
-        std::pair<jg::point, jg::point> anchors;
-        float shortest_distance = std::numeric_limits<float>::max();
-
-        for (const auto& source_anchor : source_anchors)
-        {
-            for (const auto& target_anchor : target_anchors)
-            {
-                const float dx = target_anchor.x - source_anchor.x;
-                const float dy = target_anchor.y - source_anchor.y;
-                const float distance = std::hypotf(dx, dy);
-
-                if (distance < shortest_distance)
-                {
-                    shortest_distance = distance;
-                    anchors = {source_anchor, target_anchor};
-                }
-            }
-        }
-
-        svg.write_arrow({anchors.first.x, anchors.first.y},
-                        {anchors.second.x, anchors.second.y},
-                        default_line);
-    }
-
-    svg.write_border();
-
-    return stream;
-}
 
 /*
     const char* json = R"json(
@@ -387,5 +386,5 @@ int main()
     diagram.add_item(jg::line{item_ids[2], item_ids[3], jg::line_kind::filled_arrow});
     diagram.add_item(jg::line{item_ids[3], item_ids[0], jg::line_kind::filled_arrow});
     
-    std::cout << diagram;
+    diagram.write_svg(std::cout);
 }

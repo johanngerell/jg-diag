@@ -16,7 +16,7 @@ if(MSVC)
     string(REGEX REPLACE "/W[1-3]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-add_definitions(-DNOMINMAX -DJG_VERIFY_ENABLE_STACK_TRACE -DJG_VERIFY_ENABLE_TERMINATE)
+add_definitions(-DNOMINMAX)
 
 if (MSVC)
     add_compile_options(/Zc:__cplusplus /EHsc /W4 /WX)
