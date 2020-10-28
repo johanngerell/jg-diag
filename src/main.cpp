@@ -5,7 +5,14 @@
 #include <map>
 #include <unordered_map>
 
-namespace shapes
+namespace jg
+{
+    class diagram;
+}
+
+std::ostream& operator<<(std::ostream&, const jg::diagram&);
+
+namespace jg
 {
 
 class rectangle final
@@ -99,9 +106,9 @@ public:
         return
         {
             jg::point{m_bounds.x + m_bounds.height / 2, m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.height + (m_bounds.width - m_bounds.height) / 2, m_bounds.y},
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
             jg::point{m_bounds.x + m_bounds.width - m_bounds.height / 2, m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + (m_bounds.width - m_bounds.height) / 2, m_bounds.y + m_bounds.height}
+            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
         };
     }
 
@@ -144,12 +151,7 @@ private:
     std::string m_text;
 };
 
-} // namespace shapes
-
-using entity_id = size_t;
-
-namespace shapes
-{
+using item_id = size_t;
 
 enum class line_kind
 {
@@ -159,68 +161,68 @@ enum class line_kind
 class line final
 {
 public:
-    entity_id source_id{};
-    entity_id target_id{};
+    item_id source_id{};
+    item_id target_id{};
     line_kind kind{};
 };
-
-} // namespace shapes
 
 class diagram final
 {
 public:
     template <typename T>
-    entity_id entity(T&& b)
+    item_id add_item(T&& item)
     {
         const auto id = new_id();
-        const auto& shape = m_shapes.insert({id, std::move(b)}).first->second;
         
-        std::visit([&](const auto& b)
+        std::visit([&](const auto& i)
         {
-            const auto& bounds = b.bounds();
+            const auto& bounds = i.bounds();
 
             if (bounds.x + bounds.width > m_extent.width - 50)
                 m_extent.width = bounds.x + bounds.width + 50;
 
             if (bounds.y + bounds.height > m_extent.height - 50)
                 m_extent.height = bounds.y + bounds.height + 50;
-        }, shape);
-        
+
+        }, m_items.insert({id, std::move(item)}).first->second);
+
         return id;
     }
 
-    entity_id entity(shapes::line&& l)
+    item_id add_item(line&& item)
     {
-        m_lines.push_back(std::move(l));
+        m_lines.push_back(std::move(item));
         return 0;
     }
 
 private:
-    static entity_id new_id()
+    static item_id new_id()
     {
-        static entity_id id;
+        static item_id id;
         return ++id;
     }
 
-    friend std::ostream& operator<<(std::ostream&, const diagram&);
+    friend std::ostream& ::operator<<(std::ostream&, const diagram&);
 
     jg::size m_extent;
-    std::map<entity_id, std::variant<shapes::rectangle, shapes::rhombus, shapes::parallelogram, shapes::ellipse>> m_shapes;
-    std::vector<shapes::line> m_lines;
+    std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse>> m_items;
+    std::vector<line> m_lines;
 };
 
 // https://www.bfilipek.com/2018/06/variant.html#overload
 template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
-std::ostream& operator<<(std::ostream& stream, const diagram& diag)
+} // namespace jg
+
+std::ostream& operator<<(std::ostream& stream, const jg::diagram& diagram)
 {
-    jg::svg_writer svg{stream, diag.m_extent};
+    jg::svg_writer svg{stream, diagram.m_extent};
     svg.write_background();
     svg.write_grid(50);
 
     jg::svg_rect_attributes default_rect;
-    default_rect.fill = "whitesmoke";
+    default_rect.fill = "#d7eff6";
     default_rect.stroke = "black";
     default_rect.stroke_width = "3";
 
@@ -232,54 +234,54 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
     jg::svg_circle_attributes default_circle;
     default_circle.fill = "red";
 
-    for (const auto& [_, shape] : diag.m_shapes)
+    for (const auto& [_, item] : diagram.m_items)
     {
-        const jg::rect bounds = std::visit([&](const auto& b) { return b.bounds(); }, shape);
+        const jg::rect bounds = std::visit([&](const auto& i) { return i.bounds(); }, item);
 
-        std::visit(overload
+        std::visit(jg::overload
         {
-            [&](const shapes::rectangle&)
+            [&](const jg::rectangle&)
             {
                 svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
             },
-            [&](const shapes::rhombus&)
+            [&](const jg::rhombus&)
             {
                 svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
             },
-            [&](const shapes::parallelogram&)
+            [&](const jg::parallelogram&)
             {
                 svg.write_parallelogram({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
             },
-            [&](const shapes::ellipse&)
+            [&](const jg::ellipse&)
             {
                 svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
             }
-        }, shape);
+        }, item);
 
-        std::visit([&](const auto& b)
+        std::visit([&](const auto& i)
         {
-            svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, b.text());
-            for (const auto& anchor : b.anchors())
+            svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, i.text());
+            for (const auto& anchor : i.anchors())
                 svg.write_circle({anchor.x, anchor.y}, 5, default_circle);
-        }, shape);
+        }, item);
     };
 
     jg::svg_line_attributes default_line;
     default_line.stroke_width = "3";
 
-    for (const auto& line : diag.m_lines)
+    for (const auto& line : diagram.m_lines)
     {
         std::array<jg::point, 4> source_anchors;
         std::visit([&] (const auto& source)
         {
             source_anchors = source.anchors();
-        }, diag.m_shapes.find(line.source_id)->second);
+        }, diagram.m_items.find(line.source_id)->second);
 
         std::array<jg::point, 4> target_anchors;
         std::visit([&] (const auto& target)
         {
             target_anchors = target.anchors();
-        }, diag.m_shapes.find(line.target_id)->second);
+        }, diagram.m_items.find(line.target_id)->second);
 
         std::pair<jg::point, jg::point> anchors;
         float shortest_distance = std::numeric_limits<float>::max();
@@ -365,22 +367,20 @@ std::ostream& operator<<(std::ostream& stream, const diagram& diag)
 
 int main()
 {
-    using namespace shapes;
+    jg::diagram diagram;
 
-    diagram diag;
-
-    const std::array entities
+    const std::array items
     {
-        diag.entity(rectangle    {{100, 100, 300, 100}, "Rectangle"}),
-        diag.entity(ellipse      {{500,  50, 300, 100}, "Ellipse"}),
-        diag.entity(rhombus      {{550, 400, 300, 100}, "Rhombus"}),
-        diag.entity(parallelogram{{ 50, 300, 400, 100}, "Parallelogram"})
+        diagram.add_item(jg::rectangle    {{ 50, 100, 300, 100}, "Rectangle"}),
+        diagram.add_item(jg::ellipse      {{500,  50, 300, 100}, "Ellipse"}),
+        diagram.add_item(jg::rhombus      {{550, 400, 300, 100}, "Rhombus"}),
+        diagram.add_item(jg::parallelogram{{100, 300, 400, 100}, "Parallelogram"})
     };
 
-    diag.entity(line{entities[0], entities[1], line_kind::filled_arrow});
-    diag.entity(line{entities[1], entities[2], line_kind::filled_arrow});
-    diag.entity(line{entities[2], entities[3], line_kind::filled_arrow});
-    diag.entity(line{entities[3], entities[0], line_kind::filled_arrow});
+    diagram.add_item(jg::line{items[0], items[1], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{items[1], items[2], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{items[2], items[3], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{items[3], items[0], jg::line_kind::filled_arrow});
     
-    std::cout << diag;
+    std::cout << diagram;
 }
