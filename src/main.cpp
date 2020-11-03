@@ -7,18 +7,12 @@
 
 namespace jg
 {
-    class diagram;
-}
 
-std::ostream& operator<<(std::ostream&, const jg::diagram&);
-
-namespace jg
-{
-
-class rectangle final
+template <typename TAnchorPolicy>
+class shape final
 {
 public:
-    rectangle(jg::rect bounds, std::string_view text)
+    shape(jg::rect bounds, std::string_view text)
         : m_bounds{bounds}
         , m_text{text}
     {}
@@ -35,13 +29,7 @@ public:
 
     std::array<jg::point, 4> anchors() const
     {
-        return
-        {
-            jg::point{m_bounds.x                     , m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
-        };
+        return TAnchorPolicy::anchors(m_bounds);
     }
 
 private:
@@ -49,107 +37,69 @@ private:
     std::string m_text;
 };
 
-class rhombus final
+struct rectangle_anchors final
 {
-public:
-    rhombus(jg::rect bounds, std::string_view text)
-        : m_bounds{bounds}
-        , m_text{text}
-    {}
-
-    jg::rect bounds() const
-    {
-        return m_bounds;
-    }
-
-    std::string_view text() const
-    {
-        return m_text;
-    }
-
-    std::array<jg::point, 4> anchors() const
+    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
     {
         return
         {
-            jg::point{m_bounds.x                     , m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
+            jg::point{bounds.x                   , bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width    , bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width / 2, bounds.y},
+            jg::point{bounds.x + bounds.width / 2, bounds.y + bounds.height}
         };
     }
-
-private:
-    jg::rect m_bounds;
-    std::string m_text;
 };
 
-class parallelogram final
+using rectangle = shape<rectangle_anchors>;
+
+struct rhombus_anchors final
 {
-public:
-    parallelogram(jg::rect bounds, std::string_view text)
-        : m_bounds{bounds}
-        , m_text{text}
-    {}
-
-    jg::rect bounds() const
-    {
-        return m_bounds;
-    }
-
-    std::string_view text() const
-    {
-        return m_text;
-    }
-
-    std::array<jg::point, 4> anchors() const
+    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
     {
         return
         {
-            jg::point{m_bounds.x + m_bounds.height / 2, m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
-            jg::point{m_bounds.x + m_bounds.width - m_bounds.height / 2, m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
+            jg::point{bounds.x                   , bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width    , bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width / 2, bounds.y},
+            jg::point{bounds.x + bounds.width / 2, bounds.y + bounds.height}
         };
     }
-
-private:
-    jg::rect m_bounds;
-    std::string m_text;
 };
 
-class ellipse final
+using rhombus = shape<rhombus_anchors>;
+
+struct parallelogram_anchors final
 {
-public:
-    ellipse(jg::rect bounds, std::string_view text)
-        : m_bounds{bounds}
-        , m_text{text}
-    {}
-
-    jg::rect bounds() const
-    {
-        return m_bounds;
-    }
-
-    std::string_view text() const
-    {
-        return m_text;
-    }
-
-    std::array<jg::point, 4> anchors() const
+    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
     {
         return
         {
-            jg::point{m_bounds.x                     , m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width    , m_bounds.y + m_bounds.height / 2},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y},
-            jg::point{m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height}
+            jg::point{bounds.x + bounds.height / 2,                bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width / 2,                 bounds.y},
+            jg::point{bounds.x + bounds.width - bounds.height / 2, bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width / 2,                 bounds.y + bounds.height}
         };
     }
-
-private:
-    jg::rect m_bounds;
-    std::string m_text;
 };
+
+using parallelogram = shape<parallelogram_anchors>;
+
+struct ellipse_anchors final
+{
+    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
+    {
+        return
+        {
+            jg::point{bounds.x                   , bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width    , bounds.y + bounds.height / 2},
+            jg::point{bounds.x + bounds.width / 2, bounds.y},
+            jg::point{bounds.x + bounds.width / 2, bounds.y + bounds.height}
+        };
+    }
+};
+
+using ellipse = shape<ellipse_anchors>;
 
 using item_id = size_t;
 
