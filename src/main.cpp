@@ -38,9 +38,7 @@ private:
 };
 
 struct rectangle_anchors final
-{
-    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
-    {
+{ static std::array<jg::point, 4> anchors(const jg::rect& bounds) {
         return
         {
             jg::point{bounds.x                   , bounds.y + bounds.height / 2},
@@ -100,6 +98,24 @@ struct ellipse_anchors final
 };
 
 using ellipse = shape<ellipse_anchors>;
+
+struct circle_anchors final
+{
+    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
+    {
+        const auto diameter = std::min(bounds.width, bounds.height);
+
+        return
+        {
+            jg::point{bounds.x               , bounds.y + diameter / 2},
+            jg::point{bounds.x + diameter    , bounds.y + diameter / 2},
+            jg::point{bounds.x + diameter / 2, bounds.y},
+            jg::point{bounds.x + diameter / 2, bounds.y + diameter}
+        };
+    }
+};
+
+using circle = shape<circle_anchors>;
 
 using item_id = size_t;
 
@@ -168,6 +184,11 @@ public:
         default_text.font_size = std::to_string(font_size);
         default_text.font_weight = "bold";
 
+        jg::svg_circle_attributes default_circle;
+        default_circle.fill = "#d7eff6";
+        default_circle.stroke = "black";
+        default_circle.stroke_width = "3";
+
         jg::svg_circle_attributes marker_circle;
         marker_circle.fill = "red";
 
@@ -195,6 +216,11 @@ public:
                 [&](const jg::ellipse&)
                 {
                     svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
+                },
+                [&](const jg::circle&)
+                {
+                    const auto radius = std::min(bounds.width, bounds.height) / 2;
+                    svg.write_circle({bounds.x + radius, bounds.y + radius}, radius, default_circle);
                 }
             }, item);
 
@@ -261,7 +287,7 @@ private:
 
     std::string m_title;
     jg::size m_size;
-    std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse>> m_items;
+    std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse, circle>> m_items;
     std::vector<line> m_lines;
 };
 
@@ -328,14 +354,16 @@ int main()
     {
         diagram.add_item(jg::rectangle    {{ 50, 100, 300, 100}, "Rectangle"}),
         diagram.add_item(jg::ellipse      {{500,  50, 300, 100}, "Ellipse"}),
-        diagram.add_item(jg::rhombus      {{550, 400, 300, 100}, "Rhombus"}),
-        diagram.add_item(jg::parallelogram{{100, 300, 400, 100}, "Parallelogram"})
+        diagram.add_item(jg::rhombus      {{550, 500, 300, 100}, "Rhombus"}),
+        diagram.add_item(jg::parallelogram{{ 50, 500, 400, 100}, "Parallelogram"}),
+        diagram.add_item(jg::circle       {{200, 250, 150, 150}, "Circle"})
     };
 
     diagram.add_item(jg::line{item_ids[0], item_ids[1], jg::line_kind::filled_arrow});
     diagram.add_item(jg::line{item_ids[1], item_ids[2], jg::line_kind::filled_arrow});
     diagram.add_item(jg::line{item_ids[2], item_ids[3], jg::line_kind::filled_arrow});
-    diagram.add_item(jg::line{item_ids[3], item_ids[0], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{item_ids[3], item_ids[4], jg::line_kind::filled_arrow});
+    diagram.add_item(jg::line{item_ids[4], item_ids[0], jg::line_kind::filled_arrow});
     
     diagram.write_svg(std::cout);
 }

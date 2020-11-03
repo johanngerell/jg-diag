@@ -89,6 +89,8 @@
         "cwctype": "cpp",
         "deque": "cpp",
         "map": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "__functional_base_03": "cpp",
+        "memory_resource": "cpp"
     }
 }
