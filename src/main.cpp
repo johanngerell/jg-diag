@@ -174,23 +174,17 @@ public:
         svg.write_background();
         svg.write_grid(50);
 
-        jg::svg_rect_attributes default_rect;
-        default_rect.fill = "#d7eff6";
-        default_rect.stroke = "black";
-        default_rect.stroke_width = "3";
+        const jg::svg_shape_attributes default_rect{"#d7eff6", "black", 3};
 
         constexpr float font_size = 25;
         jg::svg_text_attributes default_text;
-        default_text.font_size = std::to_string(font_size);
-        default_text.font_weight = "bold";
+        default_text.shape.stroke = "none";
+        default_text.shape.stroke_width = "";
+        default_text.font.size = std::to_string(font_size);
+        default_text.font.weight = "bold";
 
-        jg::svg_circle_attributes default_circle;
-        default_circle.fill = "#d7eff6";
-        default_circle.stroke = "black";
-        default_circle.stroke_width = "3";
-
-        jg::svg_circle_attributes marker_circle;
-        marker_circle.fill = "red";
+        const jg::svg_shape_attributes default_circle{"#d7eff6", "black", 3};
+        const jg::svg_shape_attributes marker_circle{"red", "none", 1};
 
         for (const auto& [_, item] : m_items)
         {
@@ -233,8 +227,7 @@ public:
             }, item);
         };
 
-        jg::svg_line_attributes default_line;
-        default_line.stroke_width = "3";
+        const jg::svg_shape_attributes default_line{"none", "black", 3};
 
         for (const auto& line : m_lines)
         {
