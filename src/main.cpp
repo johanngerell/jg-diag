@@ -174,17 +174,15 @@ public:
         svg.write_background();
         svg.write_grid(50);
 
-        const jg::svg_shape_attributes default_rect{"#d7eff6", "black", 3};
+        const jg::svg_paint_attributes default_paint{"#d7eff6", "black", "3"};
 
         constexpr float font_size = 25;
         jg::svg_text_attributes default_text;
-        default_text.shape.stroke = "none";
-        default_text.shape.stroke_width = "";
         default_text.font.size = std::to_string(font_size);
+        default_text.font.family = "sans-serif";
         default_text.font.weight = "bold";
-
-        const jg::svg_shape_attributes default_circle{"#d7eff6", "black", 3};
-        const jg::svg_shape_attributes marker_circle{"red", "none", 1};
+        default_text.text_anchor = svg_text_anchor::middle;
+        default_text.dominant_baseline = svg_dominant_baseline::middle;
 
         for (const auto& [_, item] : m_items)
         {
@@ -197,24 +195,24 @@ public:
             {
                 [&](const jg::rectangle&)
                 {
-                    svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                    svg.write_rect({bounds.x, bounds.y, bounds.width, bounds.height}, default_paint);
                 },
                 [&](const jg::rhombus&)
                 {
-                    svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                    svg.write_rhombus({bounds.x, bounds.y, bounds.width, bounds.height}, default_paint);
                 },
                 [&](const jg::parallelogram&)
                 {
-                    svg.write_parallelogram({bounds.x, bounds.y, bounds.width, bounds.height}, default_rect);
+                    svg.write_parallelogram({bounds.x, bounds.y, bounds.width, bounds.height}, default_paint);
                 },
                 [&](const jg::ellipse&)
                 {
-                    svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_rect);
+                    svg.write_ellipse({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, bounds.width / 2, bounds.height / 2, default_paint);
                 },
                 [&](const jg::circle&)
                 {
                     const auto radius = std::min(bounds.width, bounds.height) / 2;
-                    svg.write_circle({bounds.x + radius, bounds.y + radius}, radius, default_circle);
+                    svg.write_circle({bounds.x + radius, bounds.y + radius}, radius, default_paint);
                 }
             }, item);
 
@@ -223,11 +221,11 @@ public:
                 svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, i.text());
                 
                 for (const auto& anchor : i.anchors())
-                    svg.write_circle({anchor.x, anchor.y}, 5, marker_circle);
+                    svg.write_circle({anchor.x, anchor.y}, 5, {"red", "none", "1"});
             }, item);
         };
 
-        const jg::svg_shape_attributes default_line{"none", "black", 3};
+        const jg::svg_paint_attributes default_line{"none", "black", "3"};
 
         for (const auto& line : m_lines)
         {
