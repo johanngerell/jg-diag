@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <string>
-#include <string_view>
 
 namespace jg
 {
@@ -10,14 +9,14 @@ namespace jg
 class xml_writer final
 {
 public:
-    static xml_writer root_element(std::ostream& stream, std::string name)
+    static xml_writer root_element(std::ostream& stream, std::string_view name)
     {
-        return {stream, std::move(name)};
+        return {stream, name};
     }
 
-    static xml_writer child_element(xml_writer& parent, std::string name)
+    static xml_writer child_element(xml_writer& parent, std::string_view name)
     {
-        return {parent, std::move(name)};
+        return {parent, name};
     }
 
     xml_writer(xml_writer&& other)
@@ -42,15 +41,15 @@ public:
 
     ~xml_writer()
     {
-        if (m_stream)
-        {
-            if (m_is_parent)
-                *m_stream << "</" << m_name << ">";
-            else
-                *m_stream << " />";
-            
-            *m_stream << "\n";
-        }
+        if (!m_stream)
+            return;
+
+        if (m_is_parent)
+            *m_stream << "</" << m_name << ">";
+        else
+            *m_stream << " />";
+        
+        *m_stream << "\n";
     }
 
     template <typename T>
@@ -71,16 +70,16 @@ public:
     }
 
 private:
-    xml_writer(std::ostream& stream, std::string name)
+    xml_writer(std::ostream& stream, std::string_view name)
         : m_stream{&stream}
-        , m_name{std::move(name)}
+        , m_name{name}
     {
         *m_stream << "<" << m_name;
     }
 
-    xml_writer(xml_writer& parent, std::string name)
+    xml_writer(xml_writer& parent, std::string_view name)
         : m_stream{parent.m_stream}
-        , m_name{std::move(name)}
+        , m_name{name}
     {
         if (!parent.m_is_parent)
         {

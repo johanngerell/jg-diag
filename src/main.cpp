@@ -218,7 +218,7 @@ public:
 
             std::visit([&](const auto& i)
             {
-                svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, default_text, i.text());
+                svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, i.text(), default_text);
                 
                 for (const auto& anchor : i.anchors())
                     svg.write_circle({anchor.x, anchor.y}, 5, {"red", "none", "1"});
@@ -278,7 +278,8 @@ private:
 
     std::string m_title;
     jg::size m_size;
-    std::map<item_id, std::variant<rectangle, rhombus, parallelogram, ellipse, circle>> m_items;
+    using shapes = std::variant<rectangle, rhombus, parallelogram, ellipse, circle>;
+    std::map<item_id, shapes> m_items;
     std::vector<line> m_lines;
 };
 

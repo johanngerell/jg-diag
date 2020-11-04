@@ -123,10 +123,10 @@ public:
 
     void write_grid(float distance, std::string_view color = "whitesmoke")
     {
-        for (float f = distance; f <= m_size.width; f += distance)
+        for (float f = distance; f < m_size.width; f += distance)
             write_line({f, 0}, {f, m_size.height}, {"none", std::string(color), "1"});
 
-        for (float f = distance; f <= m_size.height; f += distance)
+        for (float f = distance; f < m_size.height; f += distance)
             write_line({0, f}, {m_size.width, f}, {"none", std::string(color), "1"});
     }
 
@@ -142,7 +142,7 @@ public:
         attributes.text_anchor = svg_text_anchor::start;
         attributes.dominant_baseline = svg_dominant_baseline::middle;
 
-        write_text({font_size / 2, font_size}, attributes, title);
+        write_text({font_size / 2, font_size}, title, attributes);
     }
 
     void write_border()
@@ -157,31 +157,31 @@ public:
         tag.write_attribute("stroke-width", 1);
     }
 
-    void write_line(jg::point p1, jg::point p2, const svg_paint_attributes& attributes)
+    void write_line(jg::point point1, jg::point point2, const svg_paint_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "line");
-        tag.write_attribute("x1", p1.x);
-        tag.write_attribute("y1", p1.y);
-        tag.write_attribute("x2", p2.x);
-        tag.write_attribute("y2", p2.y);
+        tag.write_attribute("x1", point1.x);
+        tag.write_attribute("y1", point1.y);
+        tag.write_attribute("x2", point2.x);
+        tag.write_attribute("y2", point2.y);
         tag.write_attribute("stroke", attributes.stroke);
         tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
-    void write_arrow(jg::point p1, jg::point p2, const svg_paint_attributes& attributes)
+    void write_arrow(jg::point point1, jg::point point2, const svg_paint_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "line");
-        tag.write_attribute("x1", p1.x);
-        tag.write_attribute("y1", p1.y);
+        tag.write_attribute("x1", point1.x);
+        tag.write_attribute("y1", point1.y);
 
-        const float dx = (float)p2.x - (float)p1.x;
-        const float dy = (float)p2.y - (float)p1.y;
+        const float dx = point2.x - point1.x;
+        const float dy = point2.y - point1.y;
         const float distance = std::hypotf(dx, dy);
-        const float ddx = (float)m_arrowhead_length * dx / distance;
-        const float ddy = (float)m_arrowhead_length * dy / distance;
+        const float ddx = m_arrowhead_length * dx / distance;
+        const float ddy = m_arrowhead_length * dy / distance;
 
-        tag.write_attribute("x2", (size_t)((float)p2.x - ddx));
-        tag.write_attribute("y2", (size_t)((float)p2.y - ddy));
+        tag.write_attribute("x2", point2.x - ddx);
+        tag.write_attribute("y2", point2.y - ddy);
 
         tag.write_attribute("stroke", attributes.stroke);
         tag.write_attribute("stroke-width", attributes.stroke_width);
@@ -202,16 +202,16 @@ public:
 
     void write_rhombus(jg::rect rect, const svg_paint_attributes& attributes)
     {
-        const jg::point p1{rect.x, rect.y + rect.height / 2};
-        const jg::point p2{rect.x + rect.width / 2, rect.y};
-        const jg::point p3{rect.x + rect.width, rect.y + rect.height / 2};
-        const jg::point p4{rect.x + rect.width / 2, rect.y + rect.height};
+        const jg::point point1{rect.x                 , rect.y + rect.height / 2};
+        const jg::point point2{rect.x + rect.width / 2, rect.y};
+        const jg::point point3{rect.x + rect.width    , rect.y + rect.height / 2};
+        const jg::point point4{rect.x + rect.width / 2, rect.y + rect.height};
 
         std::ostringstream path;
-        path << "M"  << p1.x << " " << p1.y;
-        path << " L" << p2.x << " " << p2.y;
-        path << " L" << p3.x << " " << p3.y;
-        path << " L" << p4.x << " " << p4.y;
+        path << "M"  << point1.x << " " << point1.y;
+        path << " L" << point2.x << " " << point2.y;
+        path << " L" << point3.x << " " << point3.y;
+        path << " L" << point4.x << " " << point4.y;
         path << " Z";
         
         auto tag = xml_writer::child_element(m_root, "path");
@@ -224,16 +224,16 @@ public:
 
     void write_parallelogram(jg::rect rect, const svg_paint_attributes& attributes)
     {
-        const jg::point p1{rect.x + rect.height, rect.y};
-        const jg::point p2{rect.x + rect.width, rect.y};
-        const jg::point p3{rect.x + rect.width - rect.height, rect.y + rect.height};
-        const jg::point p4{rect.x, rect.y + rect.height};
+        const jg::point point1{rect.x + rect.height             , rect.y};
+        const jg::point point2{rect.x + rect.width              , rect.y};
+        const jg::point point3{rect.x + rect.width - rect.height, rect.y + rect.height};
+        const jg::point point4{rect.x                           , rect.y + rect.height};
 
         std::ostringstream path;
-        path << "M"  << p1.x << " " << p1.y;
-        path << " L" << p2.x << " " << p2.y;
-        path << " L" << p3.x << " " << p3.y;
-        path << " L" << p4.x << " " << p4.y;
+        path << "M"  << point1.x << " " << point1.y;
+        path << " L" << point2.x << " " << point2.y;
+        path << " L" << point3.x << " " << point3.y;
+        path << " L" << point4.x << " " << point4.y;
         path << " Z";
         
         auto tag = xml_writer::child_element(m_root, "path");
@@ -244,7 +244,7 @@ public:
         tag.write_attribute("stroke-linejoin", "bevel");
     }
 
-    void write_text(jg::point point, const svg_text_attributes& attributes, std::string_view text)
+    void write_text(jg::point point, std::string_view text, const svg_text_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "text");
         tag.write_attribute("x", point.x);
