@@ -1,12 +1,14 @@
 #include "jg_svg_writer.h"
-#include <variant>
-#include <vector>
 #include <array>
 #include <map>
 #include <unordered_map>
+#include <variant>
+#include <vector>
 
 namespace jg
 {
+
+using anchor_array = std::array<jg::point, 4>;
 
 template <typename TAnchorPolicy>
 class shape final
@@ -27,7 +29,7 @@ public:
         return m_text;
     }
 
-    std::array<jg::point, 4> anchors() const
+    anchor_array anchors() const
     {
         return TAnchorPolicy::anchors(m_bounds);
     }
@@ -38,7 +40,9 @@ private:
 };
 
 struct rectangle_anchors final
-{ static std::array<jg::point, 4> anchors(const jg::rect& bounds) {
+{
+    static anchor_array anchors(const jg::rect& bounds)
+    {
         return
         {
             jg::point{bounds.x                   , bounds.y + bounds.height / 2},
@@ -53,7 +57,7 @@ using rectangle = shape<rectangle_anchors>;
 
 struct rhombus_anchors final
 {
-    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
+    static anchor_array anchors(const jg::rect& bounds)
     {
         return
         {
@@ -69,7 +73,7 @@ using rhombus = shape<rhombus_anchors>;
 
 struct parallelogram_anchors final
 {
-    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
+    static anchor_array anchors(const jg::rect& bounds)
     {
         return
         {
@@ -85,7 +89,7 @@ using parallelogram = shape<parallelogram_anchors>;
 
 struct ellipse_anchors final
 {
-    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
+    static anchor_array anchors(const jg::rect& bounds)
     {
         return
         {
@@ -101,7 +105,7 @@ using ellipse = shape<ellipse_anchors>;
 
 struct circle_anchors final
 {
-    static std::array<jg::point, 4> anchors(const jg::rect& bounds)
+    static anchor_array anchors(const jg::rect& bounds)
     {
         const auto diameter = std::min(bounds.width, bounds.height);
 
