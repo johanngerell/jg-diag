@@ -1,9 +1,9 @@
-#include "jg_svg_writer.h"
 #include <array>
 #include <map>
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include "jg_svg_writer.h"
 
 namespace jg
 {
@@ -39,6 +39,9 @@ private:
     std::string m_text;
 };
 
+//     x
+//  x     x
+//     x
 struct rectangle_anchors final
 {
     static anchor_array anchors(const jg::rect& bounds)
@@ -55,6 +58,9 @@ struct rectangle_anchors final
 
 using rectangle = shape<rectangle_anchors>;
 
+//     x
+//  x     x
+//     x
 struct rhombus_anchors final
 {
     static anchor_array anchors(const jg::rect& bounds)
@@ -71,6 +77,9 @@ struct rhombus_anchors final
 
 using rhombus = shape<rhombus_anchors>;
 
+//       x
+//  x      x
+//    x
 struct parallelogram_anchors final
 {
     static anchor_array anchors(const jg::rect& bounds)
@@ -87,6 +96,9 @@ struct parallelogram_anchors final
 
 using parallelogram = shape<parallelogram_anchors>;
 
+//      x
+//  x       x
+//      x
 struct ellipse_anchors final
 {
     static anchor_array anchors(const jg::rect& bounds)
@@ -103,6 +115,9 @@ struct ellipse_anchors final
 
 using ellipse = shape<ellipse_anchors>;
 
+//     x
+//  x     x
+//     x
 struct circle_anchors final
 {
     static anchor_array anchors(const jg::rect& bounds)
