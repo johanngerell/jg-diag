@@ -1,0 +1,81 @@
+<svg width="900" height="650" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="arrowhead" markerWidth="20" markerHeight="20" refX="0" refY="10" orient="auto" markerUnits="userSpaceOnUse">
+<polygon points="0 0, 20 10, 0 20" />
+</marker>
+</defs>
+<rect width="100%" height="100%" fill="white" />
+<!--Grid /-->
+<line x1="50" y1="0" x2="50" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="100" y1="0" x2="100" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="150" y1="0" x2="150" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="200" y1="0" x2="200" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="250" y1="0" x2="250" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="300" y1="0" x2="300" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="350" y1="0" x2="350" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="400" y1="0" x2="400" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="450" y1="0" x2="450" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="500" y1="0" x2="500" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="550" y1="0" x2="550" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="600" y1="0" x2="600" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="650" y1="0" x2="650" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="700" y1="0" x2="700" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="750" y1="0" x2="750" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="800" y1="0" x2="800" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="850" y1="0" x2="850" y2="650" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="50" x2="900" y2="50" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="100" x2="900" y2="100" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="150" x2="900" y2="150" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="200" x2="900" y2="200" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="250" x2="900" y2="250" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="300" x2="900" y2="300" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="350" x2="900" y2="350" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="400" x2="900" y2="400" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="450" x2="900" y2="450" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="500" x2="900" y2="500" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="550" x2="900" y2="550" stroke="whitesmoke" stroke-width="1" />
+<line x1="0" y1="600" x2="900" y2="600" stroke="whitesmoke" stroke-width="1" />
+<rect x="50" y="100" width="300" height="100" fill="#d7eff6" stroke="black" stroke-width="3" />
+<!--Rectangle /-->
+<text x="200" y="150" font-size="25.000000" font-family="sans-serif" font-weight="bold" font-style="" text-anchor="middle" dominant-baseline="middle" fill="" stroke="">Rectangle</text>
+<circle cx="50" cy="150" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="350" cy="150" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="200" cy="100" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="200" cy="200" r="5" fill="red" stroke="none" stroke-width="1" />
+<ellipse cx="650" cy="100" rx="150" ry="50" fill="#d7eff6" stroke="black" stroke-width="3" />
+<!--Ellipse /-->
+<text x="650" y="100" font-size="25.000000" font-family="sans-serif" font-weight="bold" font-style="" text-anchor="middle" dominant-baseline="middle" fill="" stroke="">Ellipse</text>
+<circle cx="500" cy="100" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="800" cy="100" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="650" cy="50" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="650" cy="150" r="5" fill="red" stroke="none" stroke-width="1" />
+<path d="M550 550 L700 500 L850 550 L700 600 Z" fill="#d7eff6" stroke="black" stroke-width="3" stroke-linejoin="bevel" />
+<!--Rhombus /-->
+<text x="700" y="550" font-size="25.000000" font-family="sans-serif" font-weight="bold" font-style="" text-anchor="middle" dominant-baseline="middle" fill="" stroke="">Rhombus</text>
+<circle cx="550" cy="550" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="850" cy="550" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="700" cy="500" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="700" cy="600" r="5" fill="red" stroke="none" stroke-width="1" />
+<path d="M150 500 L450 500 L350 600 L50 600 Z" stroke="black" fill="#d7eff6" stroke-width="3" stroke-linejoin="bevel" />
+<!--Parallelogram /-->
+<text x="250" y="550" font-size="25.000000" font-family="sans-serif" font-weight="bold" font-style="" text-anchor="middle" dominant-baseline="middle" fill="" stroke="">Parallelogram</text>
+<circle cx="100" cy="550" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="250" cy="500" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="400" cy="550" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="250" cy="600" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="275" cy="325" r="75" fill="#d7eff6" stroke="black" stroke-width="3" />
+<!--Circle /-->
+<text x="275" y="325" font-size="25.000000" font-family="sans-serif" font-weight="bold" font-style="" text-anchor="middle" dominant-baseline="middle" fill="" stroke="">Circle</text>
+<circle cx="200" cy="325" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="350" cy="325" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="275" cy="250" r="5" fill="red" stroke="none" stroke-width="1" />
+<circle cx="275" cy="400" r="5" fill="red" stroke="none" stroke-width="1" />
+<!--Arrows /-->
+<line x1="350" y1="150" x2="481.026" y2="106.325" stroke="black" stroke-width="3" marker-end="url(#arrowhead)" />
+<line x1="650" y1="150" x2="697.172" y2="480.201" stroke="black" stroke-width="3" marker-end="url(#arrowhead)" />
+<line x1="550" y1="550" x2="420" y2="550" stroke="black" stroke-width="3" marker-end="url(#arrowhead)" />
+<line x1="250" y1="500" x2="270.149" y2="419.403" stroke="black" stroke-width="3" marker-end="url(#arrowhead)" />
+<line x1="275" y1="250" x2="216.641" y2="211.094" stroke="black" stroke-width="3" marker-end="url(#arrowhead)" />
+<text x="12.5" y="25" font-size="25.000000" font-family="sans-serif" font-weight="bold" font-style="normal" text-anchor="start" dominant-baseline="middle" fill="" stroke="">jg-diagram-sample</text>
+<rect x="0" y="0" width="900" height="650" fill="transparent" stroke="black" stroke-width="1" />
+</svg>

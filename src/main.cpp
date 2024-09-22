@@ -167,9 +167,9 @@ public:
     {
         const auto id = new_id();
         
-        std::visit([&](const auto& i)
+        std::visit([&](const auto& shape)
         {
-            const auto& bounds = i.bounds();
+            const auto& bounds = shape.bounds();
 
             if (bounds.x + bounds.width > m_size.width - 50)
                 m_size.width = bounds.x + bounds.width + 50;
@@ -191,6 +191,8 @@ public:
     {
         jg::svg_writer svg{stream, m_size};
         svg.write_background();
+
+        svg.write_comment("Grid");
         svg.write_grid(50);
 
         const jg::svg_paint_attributes default_paint{"#d7eff6", "black", "3"};
@@ -205,9 +207,9 @@ public:
 
         for (const auto& [_, item] : m_items)
         {
-            const jg::rect bounds = std::visit([&](const auto& i)
+            const jg::rect bounds = std::visit([&](const auto& shape)
             {
-                return i.bounds();
+                return shape.bounds();
             }, item);
 
             std::visit(jg::overload
@@ -235,16 +237,19 @@ public:
                 }
             }, item);
 
-            std::visit([&](const auto& i)
+            std::visit([&](const auto& shape)
             {
-                svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, i.text(), default_text);
+                svg.write_comment(shape.text());
+                svg.write_text({bounds.x + bounds.width / 2, bounds.y + bounds.height / 2}, shape.text(), default_text);
                 
-                for (const auto& anchor : i.anchors())
+                for (const auto& anchor : shape.anchors())
                     svg.write_circle({anchor.x, anchor.y}, 5, {"red", "none", "1"});
             }, item);
         };
 
         const jg::svg_paint_attributes default_line{"none", "black", "3"};
+
+        svg.write_comment("Arrows");
 
         for (const auto& line : m_lines)
         {

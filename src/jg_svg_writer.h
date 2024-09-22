@@ -260,7 +260,7 @@ public:
         tag.write_text(text);
     }
 
-    void write_circle(jg::point point, size_t radius, const svg_paint_attributes& attributes)
+    void write_circle(jg::point point, float radius, const svg_paint_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "circle");
         tag.write_attribute("cx", point.x);
@@ -271,7 +271,7 @@ public:
         tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
-    void write_ellipse(jg::point point, size_t xradius, size_t yradius, const svg_paint_attributes& attributes)
+    void write_ellipse(jg::point point, float xradius, float yradius, const svg_paint_attributes& attributes)
     {
         auto tag = xml_writer::child_element(m_root, "ellipse");
         tag.write_attribute("cx", point.x);
@@ -283,11 +283,17 @@ public:
         tag.write_attribute("stroke-width", attributes.stroke_width);
     }
 
+    void write_comment(std::string_view comment)
+    {
+        auto tag = xml_writer::child_element(m_root, "");
+        tag.write_comment(comment);
+    }
+
 private:
     std::ostream& m_stream;
     jg::size m_size;
     xml_writer m_root;
-    size_t m_arrowhead_length{20};
+    float m_arrowhead_length{20.0f};
 };
 
 } // namespace jg

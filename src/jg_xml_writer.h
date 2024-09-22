@@ -45,9 +45,9 @@ public:
             return;
 
         if (m_is_parent)
-            *m_stream << "</" << m_name << ">";
+            *m_stream << "</" << m_name << (m_is_comment ? "-->" : ">");
         else
-            *m_stream << " />";
+            *m_stream << (m_is_comment ? " /-->" : " />");
         
         *m_stream << "\n";
     }
@@ -58,12 +58,18 @@ public:
         *m_stream << ' ' << name << "=\"" << value << "\"";
     }
 
+    void write_comment(std::string_view comment)
+    {
+        m_is_comment = true;
+        *m_stream << "!--" << comment;
+    }
+
     void write_text(std::string_view text)
     {
         if (!m_is_parent)
         {
             m_is_parent = true;
-            *m_stream << ">";
+            *m_stream << (m_is_comment ? "-->" : ">");
         }
 
         *m_stream << text;
@@ -93,6 +99,7 @@ private:
     std::ostream* m_stream{};
     std::string m_name;
     bool m_is_parent{};
+    bool m_is_comment{};
 };
 
 } // namespace jg
